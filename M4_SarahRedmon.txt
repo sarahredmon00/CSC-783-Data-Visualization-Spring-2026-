@@ -1,0 +1,1855 @@
+#(1): Create an output log file.
+lecture_log <- file("M4_SarahRedmon.txt")
+#(2): Write console output to the log file
+sink(lecture_log, append = TRUE, type = "output")
+#(3): Write the currently opened R script to the log file
+cat(readChar(
+  rstudioapi::getSourceEditorContext()$path,
+  file.info(rstudioapi::getSourceEditorContext()$path)$size
+))
+
+
+#
+#
+#(4): LECTURE CODE
+
+#
+# PART 6
+#
+# Finding "NA" in dataset
+#   Create a data with NA's
+df <- data.frame(sex = c("M", "F", NA, "M", "F"),
+                 score = c(5, 4, 3, 4, NA))
+df
+# Caution: No double quotation marks before and after NA.
+
+#   Check NA's
+is.na(df)
+table(is.na(df))
+
+#   Check NA's by Variable
+table(is.na(df$sex))
+table(is.na(df$score))
+
+#   Analyze data with "NA"
+mean(df$sex)
+mean(df$score)
+
+#
+# Removing "NA" in dataset
+#   Remove missing rows (i.e., a row with "NA")
+library(dplyr)
+df %>% filter(is.na(score))
+df %>% filter(!is.na(score))
+
+#
+# Analyze with data excluding missing values
+df_nomiss <- df %>% filter(!is.na(score))
+mean(df_nomiss$score)
+sum(df_nomiss$score)
+
+#
+# Extracting data without missing data at the same time for multiple variables
+df_nomiss <- df %>% filter(!is.na(score) & !is.na(sex))
+df_nomiss
+df_nomiss2 <- na.omit(df)
+df_nomiss2
+
+#
+# Use an internal function to delete "NA" - na.rm = T
+mean(df$score, na.rm = T)
+sum(df$score, na.rm = T)
+
+#
+# Use an internal function, na.rm = T into summarise() or summarize()
+exam <- read.csv("csv_exam.csv")
+exam[c(3, 8, 15), "math"] <- NA
+exam %>% summarize(mean_math = mean(math))
+exam %>% summarize(mean_math = mean(math, na.rm = T))
+
+#
+# Use "NA" - na.rm = T to other functions
+exam %>% summarize(mean_math = mean(math, na.rm = T),
+                   sum_math = sum(math, na.rm = T),
+                   median_math = median(math, na.rm = T))
+
+#
+# Replace the symbol "NA" with Average
+#   Calculate an average
+mean(exam$math, na.rm = T)
+exam$math <- ifelse(is.na(exam$math), 55, exam$math)
+table(is.na(exam$math))
+exam
+mean(exam$math)
+
+#
+# Removing Outliers
+#   Assume that sex 3 and score 6 are denoted as an outlier
+outlier <- data.frame(sex = c(1, 2, 1, 3, 2, 1),
+                      score = c(5, 4, 3, 4, 2, 6))
+outlier
+table(outlier$sex)
+table(outlier$score)
+
+#
+# Handling an outlier
+#   Replacing "3" with "NA"
+outlier$sex <- ifelse(outlier$sex == 3, NA, outlier$sex)
+outlier
+
+#   If a score is not between 1 and 5, replace it with "NA"
+outlier$score <- ifelse(outlier$score > 5, NA, outlier$score)
+outlier
+
+#
+# Handling an outlier without "NA"
+outlier %>%
+  filter(!is.na(sex) & !is.na(score)) %>%
+  group_by(sex) %>%
+  summarise(mean_score = mean(score))
+
+#
+# Removing an outlier using boxplot
+#   Create a boxplot for a hwy in the mpg dataset
+mpg <- as.data.frame(ggplot2::mpg)
+boxplot(mpg$hwy)
+
+#   Output statistics from a boxplot
+boxplot(mpg$hwy)$stats
+
+#   Assign "NA" to hwy if its value is not 12 and 37
+mpg$hwy <- ifelse(mpg$hwy < 12 | mpg$hwy > 37, NA, mpg$hwy)
+table(is.na(mpg$hwy))
+
+#   Calculate an average of hwy, excluding "NA"
+mpg %>%
+  group_by(drv) %>%
+  summarise(mean_hwy = mean(hwy, na.rm = T))
+
+#
+# PART 7
+#
+# Package: ggplot2
+#   Scatter Plot - Show the relationship between two sets of data using a dot
+library(ggplot2)
+mpg <- as.data.frame(ggplot2::mpg)
+
+#   Set a background
+ggplot(data = mpg, aes(x = displ, y = hwy))
+
+#   Add a graph
+ggplot(data = mpg, aes(x = displ, y = hwy)) + geom_point()
+
+#   Define a setting (axis range, color, label)
+ggplot(data = mpg, aes(x = displ, y = hwy)) + geom_point() + xlim(3, 6)
+ggplot(data = mpg, aes(x = displ, y = hwy)) +
+  geom_point() +
+  xlim(3, 6) +
+  ylim(10, 30)
+
+#   Better coding style for readability
+#     Use a single line:
+ggplot(data = mpg, aes(x = displ, y = hwy)) + geom_point() + xlim(3, 6)
+#     Use multiple lines by "+" (Better readability):
+ggplot(data = mpg, aes(x = displ, y = hwy)) +
+  geom_point() +
+  xlim(3, 6) +
+  ylim(10, 30)
+
+#
+# EXERCISE
+# Load a package, ggplot2 and use 'mpg' and 'midwest' data to solve
+# the following questions.
+#
+# Q1. You need to know what the relationship between 'cty' and 'hwy'
+# of the mpg data. Create a scatter plot which set 'cty' as the x-axis
+# and 'hwy' as the y-axis.
+ggplot(data = mpg, aes(x = cty, y = hwy)) + geom_point()
+# Q2. You use the midwest data from the ggplot2 package,
+# which contains demographics by region, to find out what the relationship is
+# between the entire population and the Asian population. Make a scatter plot
+# of the x-axis ('poptotal') and the y-axis ('popasian'). Set only areas
+# with a total population of less than 500,000 and an Asian population
+# of less than 10,000 to be marked on the scatter plot.
+ggplot(data = subset(midwest, poptotal < 500000 & popasian < 10000),
+       aes(x = poptotal, y = popasian)) +
+  geom_point()
+
+#
+# Package: ggplot2
+#   Bar Chart - Display data using bars of different heights
+library(ggplot2)
+
+#   Average bar chart
+library(dplyr)
+df_mpg <- mpg %>%
+  group_by(drv) %>%
+  summarise(mean_hwy = mean(hwy))
+df_mpg
+
+#   Create a bar chart (Average bar chart - geom_col())
+ggplot(data = df_mpg, aes(x = drv, y = mean_hwy)) + geom_col()
+
+#   Sort by size
+ggplot(data = df_mpg, aes(x = reorder(drv, -mean_hwy), y = mean_hwy)) +
+  geom_col()
+
+#   Frequency bar chart - geom_bar()
+ggplot(data = mpg, aes(x = drv)) + geom_bar()
+ggplot(data = mpg, aes(x = hwy)) + geom_bar()
+
+#
+# Package: ggplot2
+#   Line Graphs:
+#     Line Chart - A line graph of data
+#     Time Series Chart/Graph - A graph that lines the time series data
+#                               that is listed at a certain time interval
+library(ggplot2)
+
+#   Line Graph
+ggplot(data = economics, aes(x = date, y = unemploy)) + geom_line()
+
+#
+# EXERCISE
+# Use ggplot2::economics data to solve the following questions.
+#
+# Q1. Let's see how personal savings rate ('psavert') have changed over time.
+# Create a time series graph showing changes in personal savings rate over time.
+ggplot(data = economics, aes(x = date, y = psavert)) + geom_line()
+
+#
+# PART 8
+#
+# ggplot2 Box Plot
+library(ggplot2)
+ggplot(data = mpg, aes(x = drv, y = hwy)) + geom_boxplot()
+
+#
+# Prepare for data for data analysis
+install.packages("foreign")
+library(foreign)
+library(dplyr)
+library(ggplot2)
+library(readxl)
+raw_welfare <- read.spss(file = "Koweps_hpc10_2015_beta1.sav",
+                         to.data.frame = T)
+welfare <- raw_welfare
+
+#
+# Data analysis project
+#   Check data by simple statistics
+head(welfare)
+tail(welfare)
+View(welfare)
+dim(welfare)
+str(welfare)
+summary(welfare)
+
+#
+# Rename variables
+#   Check data by simple statistics
+welfare <- rename(welfare,
+                  sex = h10_g3,
+                  birth = h10_g4,
+                  marriage = h10_g10,
+                  religion = h10_g11,
+                  income = p1002_8aq1,
+                  code_job = h10_eco9,
+                  code_region = h10_reg7)
+
+#
+# Question 1: Is it different salary by gender?
+#
+# Check variables
+class(welfare$sex)
+table(welfare$sex)
+
+#
+# Preprocessing
+table(welfare$sex)
+welfare$sex <- ifelse(welfare$sex == 9, NA, welfare$sex)
+table(is.na(welfare$sex))
+welfare$sex <- ifelse(welfare$sex == 1, "male", "female")
+table(welfare$sex)
+qplot(welfare$sex)
+
+#
+# Explore a variable "income"
+class(welfare$income)
+summary(welfare$income)
+qplot(welfare$income)
+qplot(welfare$income) + xlim(0, 1000)
+
+#
+# Preprocessing for outlier in the variable "income"
+summary(welfare$income)
+welfare$income <- ifelse(welfare$income %in% c(0,9999), NA, welfare$income)
+table(is.na(welfare$income))
+
+#
+# Create an average income table based on gender
+sex_income <- welfare %>%
+  filter(!is.na(income)) %>%
+  group_by(sex) %>%
+  summarise(mean_income = mean(income))
+sex_income
+
+#
+# Create a graph using a gender's average income table
+ggplot(data = sex_income, aes(x = sex, y = mean_income)) + geom_col()
+
+#
+# Question 2: What age has the highest income?
+#
+# Check variables
+class(welfare$birth)
+summary(welfare$birth)
+qplot(welfare$birth)
+
+#
+# Preprocessing
+summary(welfare$birth)
+table(is.na(welfare$birth))
+welfare$birth <- ifelse(welfare$birth == 9999, NA, welfare$birth)
+table(is.na(welfare$birth))
+
+#
+# Create a derived variable "age" (assumed that a current year is 2015)
+welfare$age <- 2015 - welfare$birth + 1
+summary(welfare$age)
+qplot(welfare$age)
+
+#
+# Create an average income table based on age
+age_income <- welfare %>%
+  filter(!is.na(income)) %>%
+  group_by(age) %>%
+  summarise(mean_income = mean(income))
+head(age_income)
+
+#
+# Create a graph using an age's average income table
+ggplot(data = age_income, aes(x = age, y = mean_income)) + geom_line()
+
+#
+# Question 3: What age range has the highest income?
+#
+# Preprocessing - create a derived variable "age range" (ageg)
+welfare <- welfare %>%
+  mutate(ageg = ifelse(age < 30, "young",
+                       ifelse(age <= 59, "middle", "old")))
+table(welfare$ageg)
+qplot(welfare$ageg)
+
+#
+# Create an average income table based on age range
+ageg_income <- welfare %>%
+  filter(!is.na(income)) %>%
+  group_by(ageg) %>%
+  summarise(mean_income = mean(income))
+ageg_income
+
+#
+# Create a graph using an age's range average income table
+ggplot(data = ageg_income, aes(x = ageg, y = mean_income)) + geom_col()
+ggplot(data = ageg_income, aes(x = ageg, y = mean_income)) +
+  geom_col() +
+  scale_x_discrete(limits = c("young", "middle", "old"))
+
+
+#
+#
+#(5): Close the log file connection
+sink()
+close(lecture_log)
+#
+   sex score
+1    M     5
+2    F     4
+3 <NA>     3
+4    M     4
+5    F    NA
+       sex score
+[1,] FALSE FALSE
+[2,] FALSE FALSE
+[3,]  TRUE FALSE
+[4,] FALSE FALSE
+[5,] FALSE  TRUE
+
+FALSE  TRUE 
+    8     2 
+
+FALSE  TRUE 
+    4     1 
+
+FALSE  TRUE 
+    4     1 
+[1] NA
+[1] NA
+  sex score
+1   F    NA
+   sex score
+1    M     5
+2    F     4
+3 <NA>     3
+4    M     4
+[1] 4
+[1] 16
+  sex score
+1   M     5
+2   F     4
+3   M     4
+  sex score
+1   M     5
+2   F     4
+4   M     4
+[1] 4
+[1] 16
+  mean_math
+1        NA
+  mean_math
+1  55.23529
+  mean_math sum_math median_math
+1  55.23529      939          50
+[1] 55.23529
+
+FALSE 
+   20 
+   id class math english science
+1   1     1   50      98      50
+2   2     1   60      97      60
+3   3     1   55      86      78
+4   4     1   30      98      58
+5   5     2   25      80      65
+6   6     2   50      89      98
+7   7     2   80      90      45
+8   8     2   55      78      25
+9   9     3   20      98      15
+10 10     3   50      98      45
+11 11     3   65      65      65
+12 12     3   45      85      32
+13 13     4   46      98      65
+14 14     4   48      87      12
+15 15     4   55      56      78
+16 16     4   58      98      65
+17 17     5   65      68      98
+18 18     5   80      78      90
+19 19     5   89      68      87
+20 20     5   78      83      58
+[1] 55.2
+  sex score
+1   1     5
+2   2     4
+3   1     3
+4   3     4
+5   2     2
+6   1     6
+
+1 2 3 
+3 2 1 
+
+2 3 4 5 6 
+1 1 2 1 1 
+  sex score
+1   1     5
+2   2     4
+3   1     3
+4  NA     4
+5   2     2
+6   1     6
+  sex score
+1   1     5
+2   2     4
+3   1     3
+4  NA     4
+5   2     2
+6   1    NA
+# A tibble: 2 × 2
+    sex mean_score
+  <dbl>      <dbl>
+1     1          4
+2     2          3
+     [,1]
+[1,]   12
+[2,]   18
+[3,]   24
+[4,]   27
+[5,]   37
+
+FALSE  TRUE 
+  231     3 
+# A tibble: 3 × 2
+  drv   mean_hwy
+  <chr>    <dbl>
+1 4         19.2
+2 f         27.7
+3 r         21  
+# A tibble: 3 × 2
+  drv   mean_hwy
+  <chr>    <dbl>
+1 4         19.2
+2 f         28.2
+3 r         21  
+
+The downloaded binary packages are in
+	/var/folders/nm/hztlw0mn0q1fd1c4rtwrw2ch0000gn/T//RtmpPO17um/downloaded_packages
+  h10_id h10_ind h10_sn h10_merkey h_new h10_cobf h10_reg5
+1      1       1      1      10101     0       NA        1
+  h10_reg7 h10_din h10_cin h10_flag  p10_wgl   p10_wsl  p10_wgc
+1        1     864     864        0 776.9947 0.2567795 763.7189
+    p10_wsc h10_hc nh1001_1 nh1001_2 h1001_1 h10_pind h10_pid
+1 0.2523922      2       NA       NA       1        1     101
+  h10_g1 h10_g2 h10_g3 h10_g4 h10_g6 h10_g7 h10_g8 h10_g9 h10_g10
+1      1     10      2   1936      2      0      0      0       2
+  h10_g11 h10_g12 h1001_110 h1001_5aq1 h1001_5aq2 h1001_5aq3
+1       2       1         1          0          0          0
+  h1001_5aq4 h10_med1 h10_med2 h10_med3 h10_med4 h10_med5
+1          0        1        3       60        0        0
+  h10_med6 h10_med7 h10_med8 h10_g9_1 h10_med9 h10_med10 h10_eco1
+1        0        3        0        3        8         0        1
+  h10_eco2 h10_eco3 h10_eco4 h10_eco4_1 h10_eco5_1 h10_eco6
+1        2       NA        9         NA         NA       NA
+  h10_eco_7_1 h10_eco_7_2 h10_eco_7_3 h10_eco8 h10_eco9 h10_eco10
+1          NA          NA          NA       NA       NA        NA
+  h10_eco11 h10_soc1 h10_soc_2 h10_soc_3 h10_soc_4 h10_soc_5
+1        10        1         0        NA        NA        NA
+  h10_soc_6 h10_soc_7 h10_soc_8 h10_soc_9 h10_soc_10 h10_soc_11
+1        NA        NA        NA        NA         NA         NA
+  h10_soc8 h10_soc9 h10_soc11 h10_soc10 h10_soc_12 h10_soc_13
+1        0        0         0         0          4          4
+  h1005_1 h1005_3aq1 h1005_2 h1005_3 h1005_4 h1005_5 h1005_6
+1       1          2      NA      NA       2      NA      NA
+  h1005_7 nh1005_8 nh1005_9 h1005_3aq2 h1006_aq1 h1006_1 h1006_2
+1       0        4        5          0         2       2       3
+  h1006_4 h1006_5 h1006_3 h1006_6 h1006_8 h1006_9 h1006_aq2
+1       2      33       2    5000       1      88         0
+  h1006_aq3 h1006_10 h1006_11 h1006_12 h1006_13 h1006_14 h1006_21
+1         0        1        1        1        2        1        1
+  h1006_22 h1006_23 h1006_24 h1006_25 h1006_27 h1006_30 h1006_33
+1        1        1        1        5        2        2        2
+  h1006_36 h1006_39 h1006_3aq1 h1007_3aq1 h1007_3aq2 h1007_5aq1
+1        2        2          2         23          3          0
+  h1007_3aq3 h1007_3aq4 h1007_3aq5 h1007_6aq1 h1007_3aq6
+1          0          0          8          5          3
+  h1007_5aq2 h1007_3aq7 h1007_3aq8 h1007_3aq9 h1007_3aq10
+1          0          4         16          0           0
+  h1007_3aq11 h1007_5aq3 h1007_5aq4 h1007_3aq13 h1007_6aq4
+1           1          1          2          13          0
+  h1007_6aq6 h1007_3aq14 h1007_3aq15 h1007_3aq16 h1007_3aq17
+1          0           0           0           0           0
+  h1007_4 h1007_6aq7 h1007_6aq8 h1007_6aq9 h1007_6aq10
+1       0          0          0          0           0
+  h1007_6aq11 h1007_5 h1007_6aq12 h1007_6aq13 h1007_6aq14 h1007_9
+1           0       0           0           0           0      74
+  h1009_9 h1009_6aq4 h10_inc1 h10_inc2_1 h10_inc2_2 h10_inc3_1
+1      50        100        1          0         NA          0
+  h10_inc3_2 h10_inc4_1 h10_inc4_2 h10_inc5_1 h10_inc5_2
+1         NA          0         NA          0         NA
+  h10_inc6_1 h10_inc6_2 h10_inc7_1 h10_inc7_2 h1008_106 h1008_107
+1          0         NA          1         12         0         0
+  h1008_108 h1008_109 h1008_110 h1008_111 h10_inc2_3 h10_inc2
+1         0         0         0         1          1       NA
+  h10_inc3_6 h10_inc3 h10_inc4_7 h10_inc4 h10_inc4_8 h10_inc4_9
+1          1       NA          1       NA          1         NA
+  h1008_155 h1008_156 h1008_157 h1008_158 h1008_160 h1008_159
+1        NA        NA        NA        NA        NA        NA
+  h1008_3aq3 h1008_161 h1008_162 h1008_163 h1008_164 h1008_166
+1         NA        NA        NA        NA        NA        NA
+  h1008_165 h1008_3aq4 h1008_167 h1008_168 h1008_169 h1008_170
+1        NA         NA        NA        NA        NA        NA
+  h10_inc7_3 h10_inc7 h1008_aq9 h1008_aq10 h1008_aq11 h1008_aq12
+1          1        0         0          0          0          0
+  h1008_aq13 h1008_aq14 h1008_aq15 h1008_6aq1 h1008_aq16
+1          0          0          0          0          0
+  h1008_aq17 h1008_10aq1 h1008_aq19 h1008_aq20 h1008_aq21
+1         59         120          0          0          0
+  h1008_5aq3 h1008_7aq1 h1008_aq22 h1008_7aq2 h1008_aq23
+1          0          0          0          0          0
+  h1008_aq24 h1008_4aq116 h1008_4aq117 h1008_5aq1 h1008_7aq4
+1          0            0            0          0          0
+  h1008_7aq5 h1008_7aq6 h1008_7aq7 h1008_7aq8 h1008_7aq9
+1          0          0          0          0          0
+  h1008_aq25 h1008_7aq10 h1008_aq26 h1008_aq27 h1008_aq28
+1          0           0          0          0          0
+  h1008_aq29 h1008_3aq5 h1008_4aq118 h1008_aq30 h1008_6aq3
+1          0          0            0          3          0
+  h1008_3aq6 h1008_3aq7 nh1008_3aq1 h1008_aq32 h1008_aq33
+1          0        682          NA          0          0
+  h1008_aq34 h1008_3aq8 h1008_195 h1008_7aq11 h1009_aq1 h1009_aq2
+1          3          0         0           0         0         0
+  h1009_aq3 h1009_aq4 h1009_aq5 h1009_aq6 h1009_aq7 h1009_aq8
+1         0         0         0         0         0         0
+  h1010_aq1 h1010_aq2 h1010_aq3 h1010_aq4 h1010_aq5 h1010_aq6
+1         0         0         0         0         0       100
+  h1010_aq7 h1010_aq8 h1010_aq9 h1010_aq10 h1010_aq11 h1010_aq12
+1         0         0         0          0          0          0
+  h1010_aq13 h1010_aq14 h1010_aq15 h1010_aq16 h1010_aq17
+1          0          0          0          0          0
+  h1010_aq18 h1010_aq19 h1010_aq20 h1010_26 h1010_27 h1010_aq23
+1          0          0          0        0        0          0
+  h1010_aq24 h1010_aq25 h1010_aq26 h1011_2 h1011_3 h1011_4
+1          0          0          0       2       2       2
+  h1011_5 h1011_6 h1011_7 h1011_8 h1011_3aq1 h1011_3aq2
+1       3       2       2       2          2          3
+  h1011_3aq3 h1011_3aq4 h1011_3aq5 h1011_3aq6 h1011_3aq7 h1012_1
+1          3          2         NA          2          2       2
+  nh1012_1 h1012_2 h1012_3 h1012_4 h1012_5 h1012_6 h1012_7
+1       NA      NA      NA      NA      NA      NA       1
+  nh1012_7 nh1012_8 h1012_9 h1012_10 h1012_11 h1012_12 h1012_13
+1       NA       NA      NA       NA       NA       NA       NA
+  h1012_14 h1012_15 h1012_3aq1 h1012_16 h1012_17 h1012_18
+1       NA       NA         NA       NA       NA       NA
+  h1012_19 h1012_1_4aq1 h1012_1_5aq1 h1012_1_5aq2 h1012_1_5aq3
+1       NA            1            2           NA           NA
+  h1012_1_5aq4 h1012_1_5aq5 h1012_1_4aq2 h1012_1_4aq3 h1013_2
+1           NA           NA            1            2       1
+  h1013_6 h1013_10 h1013_14 h1013_18 h1013_22 h1013_26 h1013_8aq1
+1       1        2        2        2        2        2          2
+  h1013_5aq1 h1013_8aq2 h1013_4aq1 h1013_4aq2 h1013_4aq4
+1          2          2          2         NA         NA
+  h1013_4aq6 h1013_4aq8 h1013_4aq10 h1013_5aq4 h1013_5aq6
+1         NA         NA          NA         NA         NA
+  h1013_5aq8 h1013_6aq1 h1013_4aq14
+1         NA         NA          NA
+                                                                                                                                                                                                                                                      h1013_4aq15
+1 .                                                                                                                                                                                                                                                              
+  h1013_4aq16 h1013_4aq17 h1013_4aq18 h1013_4aq20 h1013_4aq22
+1           2          NA          NA          NA          NA
+  h1013_4aq24 h1013_4aq26 h1013_4aq28 h1013_4aq30 h1013_4aq32
+1          NA          NA          NA          NA          NA
+  h1014_4 h1014_8 h1014_12 h1014_16 h1014_20 h1014_24 h1014_28
+1       1       1        2        2        2        2        2
+  h1014_32 h1014_36 h1014_3aq1 h1014_4aq1 h1015_4 h1015_8
+1        2        2          2          2      NA      NA
+  h1015_12 h1015_20 h1015_25 h1015_29 h1015_33 h1015_37
+1       NA       NA       NA       NA       NA       NA
+  h1015_4aq1 h1015_7aq1 h1015_aq1 h1015_40 h1015_41 h1015_42
+1         NA         NA        NA       NA       NA       NA
+  h1015_43 h1015_44 h1015_45 h1015_46 h1015_47 h1015_48 h1015_49
+1       NA       NA       NA       NA       NA       NA       NA
+  h1015_50 h1015_51 h1015_52 h1015_53 h1015_54 h1015_55 h1015_56
+1       NA       NA       NA       NA       NA       NA       NA
+  h1015_57 h1015_60 h1015_aq2 h1015_61 h1015_62 h1015_63 h1015_66
+1       NA       NA        NA       NA       NA       NA       NA
+  h1015_67 h1015_68 h1015_aq3 h1015_69 h1015_70 h1015_71 h1015_74
+1       NA       NA        NA       NA       NA       NA       NA
+  h1015_75 h1015_76 h1015_aq4 h1015_77 h1015_78 h1015_79 h1015_82
+1       NA       NA        NA       NA       NA       NA       NA
+  h1015_83 h1015_84 h1015_aq5 h1015_85 h1015_86 h1015_87 h1015_90
+1       NA       NA        NA       NA       NA       NA       NA
+  h1015_91 h1015_92 h1015_aq6 h1015_93 h1015_94 h1015_95 h1015_98
+1       NA       NA        NA       NA       NA       NA       NA
+  h1015_99 h1015_100 h1015_aq7 h1015_101 h1015_102 h1015_103
+1       NA        NA        NA        NA        NA        NA
+  h1015_106 h1015_107 h1016_6aq1 h1016_6aq4 h1016_8 h1016_24
+1        NA        NA         NA         NA      NA       NA
+  h1016_4aq1 h1016_4aq4 h1016_32 h1016_36 h1016_40 h1016_4aq7
+1         NA         NA       NA       NA       NA         NA
+  h1016_56 h1016_60 h1016_64 h1017_1 h1017_2 h1017_3 h1017_4
+1       NA       NA       NA       7       4       4       2
+  h1017_5 h1017_6 h1017_7 p10_fnum p10_tq p10_cp p1001_1 p1001_2
+1       3       1       1        1      3      1       2      NA
+  p1001_aq1 p1001_3 p1001_4 p1001_5 p1001_6 p1001_10 p1001_11
+1        NA      NA      NA      NA      NA       NA       NA
+  p1001_12 p1001_13 p1001_14 p1001_7 p1001_8 p1001_9 p1001_15
+1       NA       NA       NA      NA      NA      NA        2
+  p1001_16 p1001_17 p1001_18 p1001_19 p1001_20 p1001_21 p1001_22
+1       NA       NA       NA       NA        2       NA       NA
+  p1001_23 p1001_24 p1001_25 p1001_27 p1001_28 p1001_29 p1001_30
+1       NA       NA       NA        2       NA       NA       NA
+  p1001_31 p1001_32 p1001_33 p1001_34 p1002_1 p1002_2 p1002_3
+1        2       NA       NA       NA       4      NA      NA
+  p1002_4 p1002_5 p1002_6 p1002_7 p1002_8 p1002_8aq1 p1002_9
+1      NA      NA      NA      NA      NA         NA      NA
+  p1002_8aq2 p1002_4aq1 p1002_10 p1002_11 p1002_12 p1002_8aq3
+1         NA         NA        2       NA       NA         NA
+  p1002_8aq4 p1002_31 p1002_4aq2 p1002_4aq3 p1002_4aq4 p1002_8aq5
+1         NA       NA          2         NA         NA          0
+  p1002_8aq6 p1002_8aq7 p1002_8aq8 p1002_8aq9 p1002_8aq10
+1          0          0          0          0           0
+  p1002_8aq11 p1002_8aq12 p1002_8aq13 p1002_8aq14 p1002_8aq15
+1           0           0           0           0           0
+  p1002_aq2 p1002_aq3 p1002_aq4 p1002_aq5 p1003_1 p1003_2 p1003_5
+1         0        NA        NA        NA       2       0       2
+  p1003_6 p1003_7 p1003_8 p1003_9 p1003_10 p1003_11 p1003_12
+1       3       3       4       3        2        3        3
+  p1004_1 p1004_2 p1004_3 p1004_4 p1004_5 p1004_6 p1004_7 p1004_8
+1       1       4       2       2      NA      NA       2      NA
+  p1004_9 p1004_10 p1004_11 p1004_12 p1004_13 p1004_3aq1
+1      NA       NA       NA       NA       NA          4
+  p1004_3aq2 p1004_3aq3 p1004_3aq4 p1004_3aq5 p1004_3aq6
+1          4          5          4          2          1
+  p1004_3aq7 p1004_3aq8 p1005_3aq1 p1005_3aq2 p1005_3aq3
+1          1          1         NA         NA         NA
+  p1005_3aq4 p1005_3aq5 p1005_3aq6 p1005_3aq7 p1005_3aq8
+1         NA          2         NA         NA         NA
+  p1005_3aq9 p1005_3aq10 p1005_2 p1005_3 p1005_4aq1 p1005_4aq2
+1          1          NA       5      NA         NA         NA
+  p1005_4aq3 p1005_4aq4 p1005_4aq5 p1005_4aq6 p1005_4aq7
+1         NA         NA         NA         NA         NA
+  p1005_4aq8 p1005_5 p1005_6 p1005_7 p1005_8 p1005_3aq11 p1005_9
+1         NA      NA      NA      NA      NA           2       1
+  p1005_10 p1005_11 p1005_12 p1005_13 p1005_14 p1005_15 p1005_16
+1        4        1        2        1        2        4        1
+  p1005_17 p1005_18 p1005_19 p1005_20 p1005_21 p1005_22 p1005_23
+1        1        1        1        2        3        3        1
+  p1005_24 p1005_25 p1005_26 p1005_27 p1005_28 p1005_29
+1        4        2        1        2        3        2
+  p1005_4aq9 p1005_4aq10 p1005_4aq11 p1005_aq1 p1005_aq2
+1          0           0           0         4         0
+  p1005_aq3 p1005_aq4 p1005_6aq1 p1005_6aq2 p1005_6aq3 p1005_6aq4
+1         5         1         NA         NA         NA         NA
+  p1005_6aq5 p1005_6aq6 p1005_6aq7 p1005_6aq8 p1005_6aq9
+1         NA         NA         NA         NA         NA
+  p1005_7aq1 p1005_7aq2 p1005_7aq3 p1007_3aq1 p1007_3aq2
+1          2          2          2         NA         NA
+  p1007_3aq3 p1007_3aq4 p1007_3aq5 p1007_3aq6 p1007_3aq7 np1006_1
+1         NA         NA         NA         NA         NA       NA
+  np1006_2 np1006_3 np1006_4 np1006_5 np1006_6 np1006_7 np1006_8
+1       NA       NA       NA       NA       NA       NA       NA
+  np1006_9 np1006_10 np1006_11 np1006_12 np1006_13 np1006_14
+1       NA        NA        NA        NA        NA        NA
+  np1006_15 np1006_16 np1006_17 np1006_18 np1006_19 np1006_20
+1        NA        NA        NA        NA        NA        NA
+  np1006_21 np1006_22 np1006_23 np1006_24 np1006_25 np1006_26
+1        NA        NA        NA        NA        NA        NA
+  np1006_27 np1006_28 np1006_29 np1006_30 np1006_31 np1006_32
+1        NA        NA        NA        NA        NA        NA
+  np1006_33 np1006_34 np1006_35 np1006_36 np1006_37 np1006_38
+1        NA        NA        NA        NA        NA        NA
+  np1006_39 np1006_40 np1006_41 np1006_42 np1006_43 np1006_44
+1        NA        NA        NA        NA        NA        NA
+  p1006_3aq1 c10_fnum c10_cp c10_grade c1001_1 c1001_2 c1001_3
+1         NA       NA     NA        NA      NA      NA      NA
+  c1001_4 c1001_5 c1001_6 c1001_7 c1001_8 c1001_9 c1001_10
+1      NA      NA      NA      NA      NA      NA       NA
+  c1001_11 c1001_12 c1001_13 c1001_7aq5 c1001_7aq6 c1001_7aq7
+1       NA       NA       NA         NA         NA         NA
+  c1001_7aq8 c1001_4aq1 c1001_4aq2 c1001_4aq3 c1001_4aq4
+1         NA         NA         NA         NA         NA
+  c1001_4aq5 c1001_4aq6 c1002_1 c1002_2 c1002_3 c1002_4 c1002_5
+1         NA         NA      NA      NA      NA      NA      NA
+  c1002_6 c1002_7 c1002_8 c1002_9 c1002_10 c1002_11 c1002_12
+1      NA      NA      NA      NA       NA       NA       NA
+  c1002_13 c1002_14 c1002_15 c1002_16 c1002_17 c1002_18 c1002_19
+1       NA       NA       NA       NA       NA       NA       NA
+  c1002_20 c1002_21 c1002_22 c1002_23 c1002_24 c1002_25 c1002_26
+1       NA       NA       NA       NA       NA       NA       NA
+  c1002_4aq1 c1002_27 c1002_28 c1002_29 c1002_30 c1002_31
+1         NA       NA       NA       NA       NA       NA
+  c1002_32 c1002_33 c1002_34 c1002_35 c1002_36 c1002_37 c1002_38
+1       NA       NA       NA       NA       NA       NA       NA
+  c1002_39 c1002_40 c1002_41 c1002_42 c1002_43 c1002_44 c1002_45
+1       NA       NA       NA       NA       NA       NA       NA
+  c1002_46 c1002_47 c1002_48 c1002_49 c1002_50 c1002_51 c1002_52
+1       NA       NA       NA       NA       NA       NA       NA
+  c1002_53 c1002_54 c1002_55 c1002_56 c1002_57 c1002_58
+1       NA       NA       NA       NA       NA       NA
+  c1002_4aq2 c1002_59 c1002_60 c1002_61 c1002_62 c1002_63
+1         NA       NA       NA       NA       NA       NA
+  c1002_64 c1002_65 c1002_66 c1002_67 c1002_68 c1002_69 c1002_70
+1       NA       NA       NA       NA       NA       NA       NA
+  c1002_71 c1002_72 c1002_73 c1002_74 c1002_75 c1002_76 c1002_77
+1       NA       NA       NA       NA       NA       NA       NA
+  c1002_7aq1 c1002_7aq2 c1002_7aq3 c1002_7aq4 c1002_7aq5
+1         NA         NA         NA         NA         NA
+  c1002_7aq6 c1002_7aq7 c1002_7aq8 c1002_7aq9 c1002_7aq10
+1         NA         NA         NA         NA          NA
+  c1002_7aq11 c1002_7aq12 c1002_7aq13 c1002_7aq14 c1002_78
+1          NA          NA          NA          NA       NA
+  c1002_79 c1002_80 c1002_81 c1002_82 c1002_83 c1002_84 c1002_85
+1       NA       NA       NA       NA       NA       NA       NA
+  c1002_86 c1002_87 c1002_88 c1002_89 c1002_90 c1002_91 c1002_92
+1       NA       NA       NA       NA       NA       NA       NA
+  c1002_93 c1002_94 c1002_95 c1002_96 c1002_97 c1002_98
+1       NA       NA       NA       NA       NA       NA
+  c1002_4aq3 c1002_4aq4 c1002_4aq5 c1002_4aq6 c1002_4aq7
+1         NA         NA         NA         NA         NA
+  c1002_4aq8 c1002_7aq15 c1003_4aq1 c1003_4aq2 c1003_4aq3
+1         NA          NA         NA         NA         NA
+  c1003_4aq4 c1003_4aq5 c1003_4aq6 c1003_4aq7 c1003_4aq8
+1         NA         NA         NA         NA         NA
+  c1003_4aq9 c1003_6 c1003_7 c1003_8 c1003_9 c1003_13 c1003_14
+1         NA      NA      NA      NA      NA       NA       NA
+  c1003_15 c1004_4aq1 c1004_4aq2 c1004_4aq3 c1004_4aq4 c1004_4aq5
+1       NA         NA         NA         NA         NA         NA
+  c1004_4aq6 c1004_1 c1004_2 c1004_3 c1004_4 c1004_5 c1004_6
+1         NA      NA      NA      NA      NA      NA      NA
+  c1004_7 c1004_8 c1004_9 c1004_10 c1004_4aq7 c1004_4aq8 c1005_12
+1      NA      NA      NA       NA         NA         NA       NA
+  c1005_13 c1005_14 c1005_15 c1005_16 c1005_17 c1005_4aq1
+1       NA       NA       NA       NA       NA         NA
+  c1005_18 c1005_19 c1005_7aq1 c1005_7aq2 c1005_7aq3 c1005_7aq4
+1                           NA         NA         NA         NA
+  c1005_7aq5 c1005_7aq6 c1005_7aq7 c1005_7aq8 c1005_7aq9
+1         NA         NA         NA         NA         NA
+  c1005_7aq10 c1005_7aq11 c1005_7aq12 c1005_7aq13 c1005_7aq14
+1          NA          NA          NA          NA          NA
+  c1005_7aq15 c1005_7aq16 c1005_7aq17 c1005_7aq18 c1005_7aq19
+1          NA          NA          NA          NA          NA
+  c1005_7aq20 c1005_20 c1005_21 c1005_22 c1005_23 c1005_24
+1          NA       NA       NA       NA       NA       NA
+  c1005_25 c1005_26 c1005_27 c1005_28 c1005_29 c1005_30 c1005_31
+1       NA       NA       NA       NA       NA       NA       NA
+  c1005_32 c1005_36 c1005_4aq2 c1005_38 c1005_4aq3 c1005_40
+1       NA       NA         NA       NA         NA       NA
+  c1005_10aq1 c1005_42 c1005_4aq4 c1005_44 c1005_4aq5 c1005_46
+1          NA       NA         NA       NA         NA       NA
+  c1005_4aq6 c1005_48 c1005_4aq7 c1005_4aq8 c1005_4aq9
+1         NA       NA         NA         NA         NA
+  c1005_4aq10 c1005_4aq11 c1005_4aq12 c1005_4aq13 c1005_4aq14
+1          NA          NA          NA          NA          NA
+  c1005_4aq15 c1007_4aq1 c1007_4aq2 c1007_7aq1 c1007_7aq2
+1          NA         NA         NA         NA         NA
+  c1007_7aq3 c1007_4aq3 c1007_4aq4 c1007_4aq5 c1007_4aq6
+1         NA         NA         NA         NA         NA
+  c1007_4aq7 c1007_4aq8 c1007_4aq9 c1007_4aq10 c1007_4aq11
+1         NA         NA         NA          NA          NA
+  c1007_4aq12 c1007_4aq13 c1007_4aq14 c1007_4aq15 c1007_4aq16
+1          NA          NA          NA          NA          NA
+  c1007_4aq17 c1007_4aq18 c1007_4aq19 c1007_4aq20 c1007_4aq21
+1          NA          NA          NA          NA          NA
+  c1007_4aq22 c1007_4aq23 h10_pers_income1 h10_pers_income2
+1          NA          NA               NA               NA
+  h10_pers_income3 h10_pers_income4 h10_pers_income5
+1               NA                0               NA
+ [ reached 'max' / getOption("max.print") -- omitted 5 rows ]
+      h10_id h10_ind h10_sn h10_merkey h_new h10_cobf h10_reg5
+16659   9800       7      1   98000701     1       NA        4
+      h10_reg7 h10_din h10_cin h10_flag  p10_wgl   p10_wsl
+16659        5    9764   11600        0 560.9736 0.1853893
+       p10_wgc   p10_wsc h10_hc nh1001_1 nh1001_2 h1001_1
+16659 602.8348 0.1992235      1       NA       NA       6
+      h10_pind h10_pid h10_g1 h10_g2 h10_g3 h10_g4 h10_g6 h10_g7
+16659        7  980001      1     10      1   1967      5      5
+      h10_g8 h10_g9 h10_g10 h10_g11 h10_g12 h1001_110 h1001_5aq1
+16659      0      0       1       1       1         5          0
+      h1001_5aq2 h1001_5aq3 h1001_5aq4 h10_med1 h10_med2 h10_med3
+16659          0          0          0        1        2       38
+      h10_med4 h10_med5 h10_med6 h10_med7 h10_med8 h10_g9_1
+16659        1        1        1        2        1        0
+      h10_med9 h10_med10 h10_eco1 h10_eco2 h10_eco3 h10_eco4
+16659       30         6        1        1       NA        6
+      h10_eco4_1 h10_eco5_1 h10_eco6 h10_eco_7_1 h10_eco_7_2
+16659         NA         NA       NA          NA          NA
+      h10_eco_7_3 h10_eco8 h10_eco9 h10_eco10 h10_eco11 h10_soc1
+16659          NA       49      874         1        NA        1
+      h10_soc_2 h10_soc_3 h10_soc_4 h10_soc_5 h10_soc_6 h10_soc_7
+16659         2         1         2         2         1         5
+      h10_soc_8 h10_soc_9 h10_soc_10 h10_soc_11 h10_soc8 h10_soc9
+16659         9        NA         NA         NA        0        0
+      h10_soc11 h10_soc10 h10_soc_12 h10_soc_13 h1005_1
+16659         0         0          4          3       1
+      h1005_3aq1 h1005_2 h1005_3 h1005_4 h1005_5 h1005_6 h1005_7
+16659          2      NA      NA       2      NA      NA       0
+      nh1005_8 nh1005_9 h1005_3aq2 h1006_aq1 h1006_1 h1006_2
+16659        4        4         82         1       5       3
+      h1006_4 h1006_5 h1006_3 h1006_6 h1006_8 h1006_9 h1006_aq2
+16659       3     112       2    6000       1      88         0
+      h1006_aq3 h1006_10 h1006_11 h1006_12 h1006_13 h1006_14
+16659         0        1        1        1        2        1
+      h1006_21 h1006_22 h1006_23 h1006_24 h1006_25 h1006_27
+16659        1        1        1        1        5        2
+      h1006_30 h1006_33 h1006_36 h1006_39 h1006_3aq1 h1007_3aq1
+16659        2        2        2        2          2        140
+      h1007_3aq2 h1007_5aq1 h1007_3aq3 h1007_3aq4 h1007_3aq5
+16659         72          1          0         22         16
+      h1007_6aq1 h1007_3aq6 h1007_5aq2 h1007_3aq7 h1007_3aq8
+16659        6.5         19          0         57         19
+      h1007_3aq9 h1007_3aq10 h1007_3aq11 h1007_5aq3 h1007_5aq4
+16659          5           0          17         64         37
+      h1007_3aq13 h1007_6aq4 h1007_6aq6 h1007_3aq14 h1007_3aq15
+16659         190         10          5           0          13
+      h1007_3aq16 h1007_3aq17 h1007_4 h1007_6aq7 h1007_6aq8
+16659           0           0     105          3        1.2
+      h1007_6aq9 h1007_6aq10 h1007_6aq11 h1007_5 h1007_6aq12
+16659          5        95.8           0      48        13.7
+      h1007_6aq13 h1007_6aq14 h1007_9 h1009_9 h1009_6aq4 h10_inc1
+16659        32.6         1.5     825     500        800        1
+      h10_inc2_1 h10_inc2_2 h10_inc3_1 h10_inc3_2 h10_inc4_1
+16659          0         NA          0         NA          1
+      h10_inc4_2 h10_inc5_1 h10_inc5_2 h10_inc6_1 h10_inc6_2
+16659         12          0         NA          0         NA
+      h10_inc7_1 h10_inc7_2 h1008_106 h1008_107 h1008_108
+16659          0         NA         1         1         1
+      h1008_109 h1008_110 h1008_111 h10_inc2_3 h10_inc2
+16659         0         0         3          1       NA
+      h10_inc3_6 h10_inc3 h10_inc4_7 h10_inc4 h10_inc4_8
+16659          1       NA          1     7163          1
+      h10_inc4_9 h1008_155 h1008_156 h1008_157 h1008_158
+16659       7163        NA        NA        NA        NA
+      h1008_160 h1008_159 h1008_3aq3 h1008_161 h1008_162
+16659        NA        NA         NA        NA        NA
+      h1008_163 h1008_164 h1008_166 h1008_165 h1008_3aq4
+16659        NA        NA        NA        NA         NA
+      h1008_167 h1008_168 h1008_169 h1008_170 h10_inc7_3 h10_inc7
+16659        NA        NA        NA        NA          1        0
+      h1008_aq9 h1008_aq10 h1008_aq11 h1008_aq12 h1008_aq13
+16659         0          0          0          0          0
+      h1008_aq14 h1008_aq15 h1008_6aq1 h1008_aq16 h1008_aq17
+16659          0          0          0          0          0
+      h1008_10aq1 h1008_aq19 h1008_aq20 h1008_aq21 h1008_5aq3
+16659           0          0          0          0          0
+      h1008_7aq1 h1008_aq22 h1008_7aq2 h1008_aq23 h1008_aq24
+16659          0          0          0          0          0
+      h1008_4aq116 h1008_4aq117 h1008_5aq1 h1008_7aq4 h1008_7aq5
+16659            0            0          0          0          0
+      h1008_7aq6 h1008_7aq7 h1008_7aq8 h1008_7aq9 h1008_aq25
+16659          0          0          0          0          0
+      h1008_7aq10 h1008_aq26 h1008_aq27 h1008_aq28 h1008_aq29
+16659           0          0          0          0          0
+      h1008_3aq5 h1008_4aq118 h1008_aq30 h1008_6aq3 h1008_3aq6
+16659          0            0          4          0          0
+      h1008_3aq7 nh1008_3aq1 h1008_aq32 h1008_aq33 h1008_aq34
+16659          0          NA          0          0        107
+      h1008_3aq8 h1008_195 h1008_7aq11 h1009_aq1 h1009_aq2
+16659          0         0           0      3000         0
+      h1009_aq3 h1009_aq4 h1009_aq5 h1009_aq6 h1009_aq7 h1009_aq8
+16659         0      5000         0         0         0       300
+      h1010_aq1 h1010_aq2 h1010_aq3 h1010_aq4 h1010_aq5 h1010_aq6
+16659     12000         0         0         0         0       500
+      h1010_aq7 h1010_aq8 h1010_aq9 h1010_aq10 h1010_aq11
+16659         0         0         0          0          0
+      h1010_aq12 h1010_aq13 h1010_aq14 h1010_aq15 h1010_aq16
+16659          0          0          0          0          0
+      h1010_aq17 h1010_aq18 h1010_aq19 h1010_aq20 h1010_26
+16659          0          0          0          0        2
+      h1010_27 h1010_aq23 h1010_aq24 h1010_aq25 h1010_aq26
+16659      250          0       6000          0          0
+      h1011_2 h1011_3 h1011_4 h1011_5 h1011_6 h1011_7 h1011_8
+16659       2       2       2       2       2       2       2
+      h1011_3aq1 h1011_3aq2 h1011_3aq3 h1011_3aq4 h1011_3aq5
+16659          2          3          3          2         NA
+      h1011_3aq6 h1011_3aq7 h1012_1 nh1012_1 h1012_2 h1012_3
+16659          2          2       2       NA      NA      NA
+      h1012_4 h1012_5 h1012_6 h1012_7 nh1012_7 nh1012_8 h1012_9
+16659      NA      NA      NA       1       NA       NA      NA
+      h1012_10 h1012_11 h1012_12 h1012_13 h1012_14 h1012_15
+16659       NA       NA       NA       NA       NA       NA
+      h1012_3aq1 h1012_16 h1012_17 h1012_18 h1012_19 h1012_1_4aq1
+16659         NA       NA       NA       NA       NA            2
+      h1012_1_5aq1 h1012_1_5aq2 h1012_1_5aq3 h1012_1_5aq4
+16659            2           NA           NA           NA
+      h1012_1_5aq5 h1012_1_4aq2 h1012_1_4aq3 h1013_2 h1013_6
+16659           NA            1            2       2       2
+      h1013_10 h1013_14 h1013_18 h1013_22 h1013_26 h1013_8aq1
+16659        2        2        2        2        2          2
+      h1013_5aq1 h1013_8aq2 h1013_4aq1 h1013_4aq2 h1013_4aq4
+16659          2          2          2         NA         NA
+      h1013_4aq6 h1013_4aq8 h1013_4aq10 h1013_5aq4 h1013_5aq6
+16659         NA         NA          NA         NA         NA
+      h1013_5aq8 h1013_6aq1 h1013_4aq14
+16659         NA         NA          NA
+                                                                                                                                                                                                                                                          h1013_4aq15
+16659 .                                                                                                                                                                                                                                                              
+      h1013_4aq16 h1013_4aq17 h1013_4aq18 h1013_4aq20 h1013_4aq22
+16659           2          NA          NA          NA          NA
+      h1013_4aq24 h1013_4aq26 h1013_4aq28 h1013_4aq30 h1013_4aq32
+16659          NA          NA          NA          NA          NA
+      h1014_4 h1014_8 h1014_12 h1014_16 h1014_20 h1014_24
+16659      NA      NA       NA       NA       NA       NA
+      h1014_28 h1014_32 h1014_36 h1014_3aq1 h1014_4aq1 h1015_4
+16659       NA       NA       NA         NA         NA       2
+      h1015_8 h1015_12 h1015_20 h1015_25 h1015_29 h1015_33
+16659       2        2        2        1        1        2
+      h1015_37 h1015_4aq1 h1015_7aq1 h1015_aq1 h1015_40 h1015_41
+16659        2          2          2         2       NA       NA
+      h1015_42 h1015_43 h1015_44 h1015_45 h1015_46 h1015_47
+16659       NA       NA       NA       NA       NA       NA
+      h1015_48 h1015_49 h1015_50 h1015_51 h1015_52 h1015_53
+16659       NA       NA       NA       NA       NA       NA
+      h1015_54 h1015_55 h1015_56 h1015_57 h1015_60 h1015_aq2
+16659       NA       NA       NA       NA        5         2
+      h1015_61 h1015_62 h1015_63 h1015_66 h1015_67 h1015_68
+16659       NA       NA       NA       NA       NA        6
+      h1015_aq3 h1015_69 h1015_70 h1015_71 h1015_74 h1015_75
+16659         2       NA       NA       NA       NA       NA
+      h1015_76 h1015_aq4 h1015_77 h1015_78 h1015_79 h1015_82
+16659       NA        NA       NA       NA       NA       NA
+      h1015_83 h1015_84 h1015_aq5 h1015_85 h1015_86 h1015_87
+16659       NA       NA        NA       NA       NA       NA
+      h1015_90 h1015_91 h1015_92 h1015_aq6 h1015_93 h1015_94
+16659       NA       NA       NA        NA       NA       NA
+      h1015_95 h1015_98 h1015_99 h1015_100 h1015_aq7 h1015_101
+16659       NA       NA       NA        NA        NA        NA
+      h1015_102 h1015_103 h1015_106 h1015_107 h1016_6aq1
+16659        NA        NA        NA        NA         NA
+      h1016_6aq4 h1016_8 h1016_24 h1016_4aq1 h1016_4aq4 h1016_32
+16659         NA      NA       NA         NA         NA       NA
+      h1016_36 h1016_40 h1016_4aq7 h1016_56 h1016_60 h1016_64
+16659       NA       NA         NA       NA       NA       NA
+      h1017_1 h1017_2 h1017_3 h1017_4 h1017_5 h1017_6 h1017_7
+16659       0      NA       2       1       4       1       1
+      p10_fnum p10_tq p10_cp p1001_1 p1001_2 p1001_aq1 p1001_3
+16659        1      3      1       2      NA        NA      NA
+      p1001_4 p1001_5 p1001_6 p1001_10 p1001_11 p1001_12 p1001_13
+16659      NA      NA      NA       NA       NA       NA       NA
+      p1001_14 p1001_7 p1001_8 p1001_9 p1001_15 p1001_16 p1001_17
+16659       NA      NA      NA      NA        2       NA       NA
+      p1001_18 p1001_19 p1001_20 p1001_21 p1001_22 p1001_23
+16659       NA       NA        2       NA       NA       NA
+      p1001_24 p1001_25 p1001_27 p1001_28 p1001_29 p1001_30
+16659       NA       NA        2       NA       NA       NA
+      p1001_31 p1001_32 p1001_33 p1001_34 p1002_1 p1002_2 p1002_3
+16659        2       NA       NA       NA       2       2      NA
+      p1002_4 p1002_5 p1002_6 p1002_7 p1002_8 p1002_8aq1 p1002_9
+16659    2003       1      12      25      NA         NA      10
+      p1002_8aq2 p1002_4aq1 p1002_10 p1002_11 p1002_12 p1002_8aq3
+16659         NA         NA       NA       NA       NA         NA
+      p1002_8aq4 p1002_31 p1002_4aq2 p1002_4aq3 p1002_4aq4
+16659         NA       NA         NA         NA         NA
+      p1002_8aq5 p1002_8aq6 p1002_8aq7 p1002_8aq8 p1002_8aq9
+16659          0          0          0          0          0
+      p1002_8aq10 p1002_8aq11 p1002_8aq12 p1002_8aq13 p1002_8aq14
+16659           0           0           0           0           0
+      p1002_8aq15 p1002_aq2 p1002_aq3 p1002_aq4 p1002_aq5 p1003_1
+16659           0         0        NA        NA        NA       1
+      p1003_2 p1003_5 p1003_6 p1003_7 p1003_8 p1003_9 p1003_10
+16659       2       4       3       4       4       4        4
+      p1003_11 p1003_12 p1004_1 p1004_2 p1004_3 p1004_4 p1004_5
+16659        4        4       1       4       2       2      NA
+      p1004_6 p1004_7 p1004_8 p1004_9 p1004_10 p1004_11 p1004_12
+16659      NA       1      NA       1       NA        2       NA
+      p1004_13 p1004_3aq1 p1004_3aq2 p1004_3aq3 p1004_3aq4
+16659       NA          4          4          4          4
+      p1004_3aq5 p1004_3aq6 p1004_3aq7 p1004_3aq8 p1005_3aq1
+16659          2          3          2          2         NA
+      p1005_3aq2 p1005_3aq3 p1005_3aq4 p1005_3aq5 p1005_3aq6
+16659         NA         NA         NA          2         NA
+      p1005_3aq7 p1005_3aq8 p1005_3aq9 p1005_3aq10 p1005_2
+16659         NA         NA          1          NA       3
+      p1005_3 p1005_4aq1 p1005_4aq2 p1005_4aq3 p1005_4aq4
+16659       5          4          1          1          1
+      p1005_4aq5 p1005_4aq6 p1005_4aq7 p1005_4aq8 p1005_5 p1005_6
+16659          1          1          1          1       2       2
+      p1005_7 p1005_8 p1005_3aq11 p1005_9 p1005_10 p1005_11
+16659       2       2           0       1        4        1
+      p1005_12 p1005_13 p1005_14 p1005_15 p1005_16 p1005_17
+16659        1        1        1        4        1        1
+      p1005_18 p1005_19 p1005_20 p1005_21 p1005_22 p1005_23
+16659        1        1        3        3        1        4
+      p1005_24 p1005_25 p1005_26 p1005_27 p1005_28 p1005_29
+16659        1        3        3        1        1        1
+      p1005_4aq9 p1005_4aq10 p1005_4aq11 p1005_aq1 p1005_aq2
+16659          1           1           1         6         6
+      p1005_aq3 p1005_aq4 p1005_6aq1 p1005_6aq2 p1005_6aq3
+16659         6         6         NA         NA         NA
+      p1005_6aq4 p1005_6aq5 p1005_6aq6 p1005_6aq7 p1005_6aq8
+16659         NA         NA         NA         NA         NA
+      p1005_6aq9 p1005_7aq1 p1005_7aq2 p1005_7aq3 p1007_3aq1
+16659         NA          2          2          2         NA
+      p1007_3aq2 p1007_3aq3 p1007_3aq4 p1007_3aq5 p1007_3aq6
+16659         NA         NA         NA         NA         NA
+      p1007_3aq7 np1006_1 np1006_2 np1006_3 np1006_4 np1006_5
+16659         NA       NA       NA       NA       NA       NA
+      np1006_6 np1006_7 np1006_8 np1006_9 np1006_10 np1006_11
+16659       NA       NA       NA       NA        NA        NA
+      np1006_12 np1006_13 np1006_14 np1006_15 np1006_16 np1006_17
+16659        NA        NA        NA        NA        NA        NA
+      np1006_18 np1006_19 np1006_20 np1006_21 np1006_22 np1006_23
+16659        NA        NA        NA        NA        NA        NA
+      np1006_24 np1006_25 np1006_26 np1006_27 np1006_28 np1006_29
+16659        NA        NA        NA        NA        NA        NA
+      np1006_30 np1006_31 np1006_32 np1006_33 np1006_34 np1006_35
+16659        NA        NA        NA        NA        NA        NA
+      np1006_36 np1006_37 np1006_38 np1006_39 np1006_40 np1006_41
+16659        NA        NA        NA        NA        NA        NA
+      np1006_42 np1006_43 np1006_44 p1006_3aq1 c10_fnum c10_cp
+16659        NA        NA        NA         NA       NA     NA
+      c10_grade c1001_1 c1001_2 c1001_3 c1001_4 c1001_5 c1001_6
+16659        NA      NA      NA      NA      NA      NA      NA
+      c1001_7 c1001_8 c1001_9 c1001_10 c1001_11 c1001_12 c1001_13
+16659      NA      NA      NA       NA       NA       NA       NA
+      c1001_7aq5 c1001_7aq6 c1001_7aq7 c1001_7aq8 c1001_4aq1
+16659         NA         NA         NA         NA         NA
+      c1001_4aq2 c1001_4aq3 c1001_4aq4 c1001_4aq5 c1001_4aq6
+16659         NA         NA         NA         NA         NA
+      c1002_1 c1002_2 c1002_3 c1002_4 c1002_5 c1002_6 c1002_7
+16659      NA      NA      NA      NA      NA      NA      NA
+      c1002_8 c1002_9 c1002_10 c1002_11 c1002_12 c1002_13
+16659      NA      NA       NA       NA       NA       NA
+      c1002_14 c1002_15 c1002_16 c1002_17 c1002_18 c1002_19
+16659       NA       NA       NA       NA       NA       NA
+      c1002_20 c1002_21 c1002_22 c1002_23 c1002_24 c1002_25
+16659       NA       NA       NA       NA       NA       NA
+      c1002_26 c1002_4aq1 c1002_27 c1002_28 c1002_29 c1002_30
+16659       NA         NA       NA       NA       NA       NA
+      c1002_31 c1002_32 c1002_33 c1002_34 c1002_35 c1002_36
+16659       NA       NA       NA       NA       NA       NA
+      c1002_37 c1002_38 c1002_39 c1002_40 c1002_41 c1002_42
+16659       NA       NA       NA       NA       NA       NA
+      c1002_43 c1002_44 c1002_45 c1002_46 c1002_47 c1002_48
+16659       NA       NA       NA       NA       NA       NA
+      c1002_49 c1002_50 c1002_51 c1002_52 c1002_53 c1002_54
+16659       NA       NA       NA       NA       NA       NA
+      c1002_55 c1002_56 c1002_57 c1002_58 c1002_4aq2 c1002_59
+16659       NA       NA       NA       NA         NA       NA
+      c1002_60 c1002_61 c1002_62 c1002_63 c1002_64 c1002_65
+16659       NA       NA       NA       NA       NA       NA
+      c1002_66 c1002_67 c1002_68 c1002_69 c1002_70 c1002_71
+16659       NA       NA       NA       NA       NA       NA
+      c1002_72 c1002_73 c1002_74 c1002_75 c1002_76 c1002_77
+16659       NA       NA       NA       NA       NA       NA
+      c1002_7aq1 c1002_7aq2 c1002_7aq3 c1002_7aq4 c1002_7aq5
+16659         NA         NA         NA         NA         NA
+      c1002_7aq6 c1002_7aq7 c1002_7aq8 c1002_7aq9 c1002_7aq10
+16659         NA         NA         NA         NA          NA
+      c1002_7aq11 c1002_7aq12 c1002_7aq13 c1002_7aq14 c1002_78
+16659          NA          NA          NA          NA       NA
+      c1002_79 c1002_80 c1002_81 c1002_82 c1002_83 c1002_84
+16659       NA       NA       NA       NA       NA       NA
+      c1002_85 c1002_86 c1002_87 c1002_88 c1002_89 c1002_90
+16659       NA       NA       NA       NA       NA       NA
+      c1002_91 c1002_92 c1002_93 c1002_94 c1002_95 c1002_96
+16659       NA       NA       NA       NA       NA       NA
+      c1002_97 c1002_98 c1002_4aq3 c1002_4aq4 c1002_4aq5
+16659       NA       NA         NA         NA         NA
+      c1002_4aq6 c1002_4aq7 c1002_4aq8 c1002_7aq15 c1003_4aq1
+16659         NA         NA         NA          NA         NA
+      c1003_4aq2 c1003_4aq3 c1003_4aq4 c1003_4aq5 c1003_4aq6
+16659         NA         NA         NA         NA         NA
+      c1003_4aq7 c1003_4aq8 c1003_4aq9 c1003_6 c1003_7 c1003_8
+16659         NA         NA         NA      NA      NA      NA
+      c1003_9 c1003_13 c1003_14 c1003_15 c1004_4aq1 c1004_4aq2
+16659      NA       NA       NA       NA         NA         NA
+      c1004_4aq3 c1004_4aq4 c1004_4aq5 c1004_4aq6 c1004_1 c1004_2
+16659         NA         NA         NA         NA      NA      NA
+      c1004_3 c1004_4 c1004_5 c1004_6 c1004_7 c1004_8 c1004_9
+16659      NA      NA      NA      NA      NA      NA      NA
+      c1004_10 c1004_4aq7 c1004_4aq8 c1005_12 c1005_13 c1005_14
+16659       NA         NA         NA       NA       NA       NA
+      c1005_15 c1005_16 c1005_17 c1005_4aq1 c1005_18 c1005_19
+16659       NA       NA       NA         NA                  
+      c1005_7aq1 c1005_7aq2 c1005_7aq3 c1005_7aq4 c1005_7aq5
+16659         NA         NA         NA         NA         NA
+      c1005_7aq6 c1005_7aq7 c1005_7aq8 c1005_7aq9 c1005_7aq10
+16659         NA         NA         NA         NA          NA
+      c1005_7aq11 c1005_7aq12 c1005_7aq13 c1005_7aq14 c1005_7aq15
+16659          NA          NA          NA          NA          NA
+      c1005_7aq16 c1005_7aq17 c1005_7aq18 c1005_7aq19 c1005_7aq20
+16659          NA          NA          NA          NA          NA
+      c1005_20 c1005_21 c1005_22 c1005_23 c1005_24 c1005_25
+16659       NA       NA       NA       NA       NA       NA
+      c1005_26 c1005_27 c1005_28 c1005_29 c1005_30 c1005_31
+16659       NA       NA       NA       NA       NA       NA
+      c1005_32 c1005_36 c1005_4aq2 c1005_38 c1005_4aq3 c1005_40
+16659       NA       NA         NA       NA         NA       NA
+      c1005_10aq1 c1005_42 c1005_4aq4 c1005_44 c1005_4aq5
+16659          NA       NA         NA       NA         NA
+      c1005_46 c1005_4aq6 c1005_48 c1005_4aq7 c1005_4aq8
+16659       NA         NA       NA         NA         NA
+      c1005_4aq9 c1005_4aq10 c1005_4aq11 c1005_4aq12 c1005_4aq13
+16659         NA          NA          NA          NA          NA
+      c1005_4aq14 c1005_4aq15 c1007_4aq1 c1007_4aq2 c1007_7aq1
+16659          NA          NA         NA         NA         NA
+      c1007_7aq2 c1007_7aq3 c1007_4aq3 c1007_4aq4 c1007_4aq5
+16659         NA         NA         NA         NA         NA
+      c1007_4aq6 c1007_4aq7 c1007_4aq8 c1007_4aq9 c1007_4aq10
+16659         NA         NA         NA         NA          NA
+      c1007_4aq11 c1007_4aq12 c1007_4aq13 c1007_4aq14 c1007_4aq15
+16659          NA          NA          NA          NA          NA
+      c1007_4aq16 c1007_4aq17 c1007_4aq18 c1007_4aq19 c1007_4aq20
+16659          NA          NA          NA          NA          NA
+      c1007_4aq21 c1007_4aq22 c1007_4aq23 h10_pers_income1
+16659          NA          NA          NA               NA
+      h10_pers_income2 h10_pers_income3 h10_pers_income4
+16659               NA             7163                0
+      h10_pers_income5
+16659               NA
+ [ reached 'max' / getOption("max.print") -- omitted 5 rows ]
+[1] 16664   957
+'data.frame':	16664 obs. of  957 variables:
+ $ h10_id          : num  1 2 3 4 4 6 6 6 6 6 ...
+ $ h10_ind         : num  1 1 1 1 1 1 1 1 1 1 ...
+ $ h10_sn          : num  1 1 1 1 1 1 1 1 1 1 ...
+ $ h10_merkey      : num  10101 20101 30101 40101 40101 ...
+ $ h_new           : num  0 0 0 0 0 0 0 0 0 0 ...
+ $ h10_cobf        : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ h10_reg5        : num  1 1 1 1 1 1 1 1 1 1 ...
+ $ h10_reg7        : num  1 1 1 1 1 1 1 1 1 1 ...
+ $ h10_din         : num  864 600 1571 3579 3579 ...
+ $ h10_cin         : num  864 600 1619 3687 3687 ...
+ $ h10_flag        : num  0 0 0 0 0 0 0 0 0 0 ...
+ $ p10_wgl         : num  777 960 1059 1012 1075 ...
+ $ p10_wsl         : num  0.257 0.317 0.35 0.334 0.355 ...
+ $ p10_wgc         : num  764 949 1048 992 1057 ...
+ $ p10_wsc         : num  0.252 0.314 0.346 0.328 0.349 ...
+ $ h10_hc          : num  2 2 1 1 1 1 1 1 1 1 ...
+ $ nh1001_1        : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ nh1001_2        : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ h1001_1         : num  1 1 1 2 2 5 5 5 5 5 ...
+ $ h10_pind        : num  1 1 1 1 4 1 1 1 1 1 ...
+ $ h10_pid         : num  101 201 301 401 402 601 602 603 604 605 ...
+ $ h10_g1          : num  1 1 1 1 2 1 2 3 4 5 ...
+ $ h10_g2          : num  10 10 10 10 2 10 20 11 1 2 ...
+ $ h10_g3          : num  2 2 1 1 2 1 2 2 1 2 ...
+ $ h10_g4          : num  1936 1945 1948 1942 1923 ...
+ $ h10_g6          : num  2 4 3 7 2 6 5 3 4 4 ...
+ $ h10_g7          : num  0 5 5 3 0 5 5 1 5 5 ...
+ $ h10_g8          : num  0 0 0 0 0 0 0 0 0 0 ...
+ $ h10_g9          : num  0 0 0 0 0 0 0 0 0 0 ...
+ $ h10_g10         : num  2 2 2 3 2 1 1 0 1 1 ...
+ $ h10_g11         : num  2 2 2 1 1 1 1 1 1 1 ...
+ $ h10_g12         : num  1 1 1 1 1 1 1 1 1 1 ...
+ $ h1001_110       : num  1 1 1 5 5 5 5 5 5 5 ...
+ $ h1001_5aq1      : num  0 0 0 0 0 0 0 0 0 0 ...
+ $ h1001_5aq2      : num  0 0 0 0 0 0 0 0 0 0 ...
+ $ h1001_5aq3      : num  0 0 0 0 0 0 0 0 0 0 ...
+ $ h1001_5aq4      : num  0 0 0 0 0 0 0 0 0 0 ...
+ $ h10_med1        : num  1 1 1 1 2 1 2 3 4 5 ...
+ $ h10_med2        : num  3 4 3 3 4 3 5 2 3 3 ...
+ $ h10_med3        : num  60 28 12 3 6 5 0 3 0 14 ...
+ $ h10_med4        : num  0 0 0 0 0 0 5 0 0 0 ...
+ $ h10_med5        : num  0 0 0 0 0 0 23 0 0 0 ...
+ $ h10_med6        : num  0 0 0 0 0 0 1 0 0 0 ...
+ $ h10_med7        : num  3 2 2 1 1 2 1 2 0 2 ...
+ $ h10_med8        : num  0 1 0 1 1 1 1 0 0 1 ...
+ $ h10_g9_1        : num  3 3 3 3 3 3 3 0 0 3 ...
+ $ h10_med9        : num  8 5 7 3 15 23 1 0 0 6 ...
+ $ h10_med10       : num  0 0 0 0 0 1 1 1 0 0 ...
+ $ h10_eco1        : num  1 1 1 1 2 1 2 3 4 5 ...
+ $ h10_eco2        : num  2 3 1 1 3 1 1 0 3 3 ...
+ $ h10_eco3        : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ h10_eco4        : num  9 9 2 2 9 6 9 NA 9 9 ...
+ $ h10_eco4_1      : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ h10_eco5_1      : num  NA NA 1 1 NA NA NA NA NA NA ...
+ $ h10_eco6        : num  NA NA 2 2 NA NA NA NA NA NA ...
+ $ h10_eco_7_1     : num  NA NA 1 1 NA NA NA NA NA NA ...
+ $ h10_eco_7_2     : num  NA NA 2 2 NA NA NA NA NA NA ...
+ $ h10_eco_7_3     : num  NA NA 1 3 NA NA NA NA NA NA ...
+ $ h10_eco8        : num  NA NA 75 42 NA 46 NA NA NA NA ...
+ $ h10_eco9        : num  NA NA 942 762 NA 530 NA NA NA NA ...
+ $ h10_eco10       : num  NA NA 3 2 NA 1 NA NA NA NA ...
+ $ h10_eco11       : num  10 10 NA NA 10 NA 6 NA 10 10 ...
+ $ h10_soc1        : num  1 1 1 1 2 1 2 3 4 5 ...
+ $ h10_soc_2       : num  0 0 0 1 0 2 0 0 0 0 ...
+ $ h10_soc_3       : num  NA NA NA NA NA 1 NA NA NA NA ...
+ $ h10_soc_4       : num  NA NA NA NA NA 2 NA NA NA NA ...
+ $ h10_soc_5       : num  NA NA NA NA NA 1 NA NA NA NA ...
+ $ h10_soc_6       : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ h10_soc_7       : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ h10_soc_8       : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ h10_soc_9       : num  NA NA NA NA NA 0 NA NA NA NA ...
+ $ h10_soc_10      : num  NA NA NA NA NA 0 NA NA NA NA ...
+ $ h10_soc_11      : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ h10_soc8        : num  0 0 1 2 0 0 0 0 0 0 ...
+ $ h10_soc9        : num  0 0 1 2 0 0 0 0 0 0 ...
+ $ h10_soc11       : num  0 0 2 2 0 0 0 0 0 0 ...
+ $ h10_soc10       : num  0 0 2 2 0 0 0 0 0 0 ...
+ $ h10_soc_12      : num  4 4 4 4 4 4 4 4 4 4 ...
+ $ h10_soc_13      : num  4 4 1 3 4 3 4 4 4 4 ...
+ $ h1005_1         : num  1 1 1 1 1 1 1 1 1 1 ...
+ $ h1005_3aq1      : num  2 2 1 2 2 2 2 2 2 2 ...
+ $ h1005_2         : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ h1005_3         : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ h1005_4         : num  2 2 2 2 2 2 2 2 2 2 ...
+ $ h1005_5         : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ h1005_6         : num  NA NA NA NA NA NA NA NA NA NA ...
+ $ h1005_7         : num  0 0 0 0 0 1 1 1 1 1 ...
+ $ nh1005_8        : num  4 3 3 3 3 3 3 3 3 3 ...
+ $ nh1005_9        : num  5 4 3 3 3 4 4 4 4 4 ...
+ $ h1005_3aq2      : num  0 0 0 0 0 11 11 11 11 11 ...
+ $ h1006_aq1       : num  2 2 2 2 2 2 2 2 2 2 ...
+ $ h1006_1         : num  2 2 2 1 1 2 2 2 2 2 ...
+ $ h1006_2         : num  3 3 1 3 3 3 3 3 3 3 ...
+ $ h1006_4         : num  2 3 1 3 3 3 3 3 3 3 ...
+ $ h1006_5         : num  33 198 23 73 73 82 82 82 82 82 ...
+ $ h1006_3         : num  2 1 3 1 1 1 1 1 1 1 ...
+ $ h1006_6         : num  5000 60000 200 20000 20000 50700 50700 50700 50700 50700 ...
+ $ h1006_8         : num  1 1 1 1 1 1 1 1 1 1 ...
+ $ h1006_9         : num  88 4 88 88 88 88 88 88 88 88 ...
+  [list output truncated]
+ - attr(*, "variable.labels")= Named chr [1:957] "\xb0\xa1\xb1\xb8 \xc6г\xce ID(h10_id)" "\xb0\xa1\xb1\xb8\xbb\xfd\xbc\xba\xc2\xf7\xbc\xf6(h10_ind)" "\xb0\xa1\xb1\xb8\xbaи\xae\xc0Ϸù\xf8ȣ(h10_sn)" "\xc6гΰ\xa3 \xb0\xa1\xb1\xb8\xb8\xd3\xc1\xf6 Ű\xba\xaf\xbc\xf6(h10_merkey)" ...
+  ..- attr(*, "names")= chr [1:957] "h10_id" "h10_ind" "h10_sn" "h10_merkey" ...
+     h10_id        h10_ind           h10_sn     
+ Min.   :   1   Min.   : 1.000   Min.   :1.000  
+   h10_merkey           h_new           h10_cobf    
+ Min.   :   10101   Min.   :0.0000   Min.   :1.000  
+    h10_reg5        h10_reg7        h10_din      
+ Min.   :1.000   Min.   :1.000   Min.   :-28685  
+    h10_cin          h10_flag    p10_wgl           p10_wsl      
+ Min.   :-27281   Min.   :0   Min.   :    0.0   Min.   :0.0000  
+    p10_wgc            p10_wsc            h10_hc     
+ Min.   :   50.32   Min.   :0.01663   Min.   :1.000  
+    nh1001_1        nh1001_2        h1001_1         h10_pind     
+ Min.   :2013    Min.   : 1.00   Min.   :1.000   Min.   : 1.000  
+    h10_pid           h10_g1          h10_g2      
+ Min.   :   101   Min.   :1.000   Min.   :  1.00  
+     h10_g3          h10_g4         h10_g6          h10_g7     
+ Min.   :1.000   Min.   :1907   Min.   :1.000   Min.   :0.000  
+     h10_g8            h10_g9          h10_g10     
+ Min.   : 0.0000   Min.   :0.0000   Min.   :0.000  
+    h10_g11         h10_g12         h1001_110    
+ Min.   :1.000   Min.   : 1.000   Min.   :1.000  
+   h1001_5aq1        h1001_5aq2       h1001_5aq3    
+ Min.   :0.00000   Min.   :0.0000   Min.   :0.0000  
+   h1001_5aq4        h10_med1        h10_med2    
+ Min.   :0.0000   Min.   :1.000   Min.   :1.000  
+    h10_med3         h10_med4          h10_med5      
+ Min.   :  0.00   Min.   : 0.0000   Min.   :  0.000  
+    h10_med6         h10_med7        h10_med8      
+ Min.   :0.0000   Min.   :0.000   Min.   : 0.0000  
+    h10_g9_1        h10_med9        h10_med10     
+ Min.   :0.000   Min.   : 0.000   Min.   : 0.000  
+    h10_eco1        h10_eco2        h10_eco3        h10_eco4    
+ Min.   :1.000   Min.   :0.000   Min.   :1.000   Min.   :1.000  
+   h10_eco4_1      h10_eco5_1       h10_eco6      h10_eco_7_1   
+ Min.   :3.000   Min.   :1.00    Min.   :1.000   Min.   :1.000  
+  h10_eco_7_2     h10_eco_7_3       h10_eco8        h10_eco9     
+ Min.   :1.000   Min.   :1.000   Min.   : 1.00   Min.   : 111.0  
+   h10_eco10        h10_eco11         h10_soc1    
+ Min.   : 1.000   Min.   : 1.000   Min.   :1.000  
+   h10_soc_2        h10_soc_3       h10_soc_4       h10_soc_5    
+ Min.   :0.0000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   h10_soc_6       h10_soc_7       h10_soc_8       h10_soc_9     
+ Min.   :1.000   Min.   :1.000   Min.   : 1.00   Min.   :0.0000  
+   h10_soc_10        h10_soc_11       h10_soc8     
+ Min.   : 0.0000   Min.   :1.000   Min.   :0.0000  
+    h10_soc9        h10_soc11       h10_soc10     
+ Min.   :0.0000   Min.   :0.000   Min.   :0.0000  
+   h10_soc_12      h10_soc_13       h1005_1        h1005_3aq1   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    h1005_2         h1005_3          h1005_4         h1005_5     
+ Min.   :1.000   Min.   :0.0000   Min.   :1.000   Min.   :1.000  
+    h1005_6          h1005_7          nh1005_8    
+ Min.   : 1.000   Min.   :0.0000   Min.   :1.000  
+    nh1005_9       h1005_3aq2       h1006_aq1    
+ Min.   :1.000   Min.   :  0.00   Min.   :1.000  
+    h1006_1          h1006_2        h1006_4         h1006_5      
+ Min.   : 1.000   Min.   :1.00   Min.   :1.000   Min.   :  7.00  
+    h1006_3         h1006_6          h1006_8         h1006_9     
+ Min.   :1.000   Min.   :     5   Min.   :1.000   Min.   : 1.00  
+   h1006_aq2          h1006_aq3        h1006_10    
+ Min.   :    0.00   Min.   :    0   Min.   :1.000  
+    h1006_11        h1006_12        h1006_13       h1006_14   
+ Min.   :1.000   Min.   :1.000   Min.   :1.00   Min.   :1.00  
+    h1006_21        h1006_22        h1006_23        h1006_24    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    h1006_25        h1006_27        h1006_30        h1006_33    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    h1006_36    h1006_39       h1006_3aq1     h1007_3aq1    
+ Min.   :1   Min.   :1.000   Min.   :1.00   Min.   :  0.00  
+   h1007_3aq2       h1007_5aq1       h1007_3aq3    
+ Min.   :  0.00   Min.   : 0.000   Min.   :  0.00  
+   h1007_3aq4        h1007_3aq5      h1007_6aq1    
+ Min.   :  0.000   Min.   : 0.00   Min.   : 0.000  
+   h1007_3aq6        h1007_5aq2        h1007_3aq7    
+ Min.   :  0.000   Min.   :  0.000   Min.   :  0.00  
+   h1007_3aq8       h1007_3aq9      h1007_3aq10    
+ Min.   :  0.00   Min.   :  0.00   Min.   :  0.00  
+  h1007_3aq11       h1007_5aq3       h1007_5aq4   
+ Min.   :  0.00   Min.   :   0.0   Min.   : 0.00  
+  h1007_3aq13        h1007_6aq4        h1007_6aq6    
+ Min.   :   0.00   Min.   :  0.000   Min.   :  0.00  
+  h1007_3aq14      h1007_3aq15       h1007_3aq16     
+ Min.   :  0.00   Min.   :  0.000   Min.   :  0.000  
+  h1007_3aq17         h1007_4          h1007_6aq7     
+ Min.   :  0.000   Min.   :   0.00   Min.   :  0.000  
+   h1007_6aq8       h1007_6aq9     h1007_6aq10     
+ Min.   : 0.000   Min.   : 0.00   Min.   :  0.000  
+  h1007_6aq11          h1007_5         h1007_6aq12     
+ Min.   : 0.00000   Min.   :   0.00   Min.   :  0.000  
+  h1007_6aq13       h1007_6aq14         h1007_9      
+ Min.   :  0.000   Min.   : 0.0000   Min.   :  20.0  
+    h1009_9         h1009_6aq4        h10_inc1    
+ Min.   :   0.0   Min.   :   0.0   Min.   :1.000  
+   h10_inc2_1       h10_inc2_2      h10_inc3_1    
+ Min.   :0.0000   Min.   : 0.0    Min.   :0.0000  
+   h10_inc3_2       h10_inc4_1       h10_inc4_2   
+ Min.   : 1.000   Min.   :0.0000   Min.   : 1.00  
+   h10_inc5_1        h10_inc5_2      h10_inc6_1     
+ Min.   :0.00000   Min.   : 2.00   Min.   :0.00000  
+   h10_inc6_2      h10_inc7_1       h10_inc7_2   
+ Min.   : 5.00   Min.   :0.0000   Min.   : 1.00  
+   h1008_106        h1008_107       h1008_108     
+ Min.   :0.0000   Min.   :0.000   Min.   :0.0000  
+   h1008_109        h1008_110       h1008_111      h10_inc2_3   
+ Min.   :0.0000   Min.   :0.000   Min.   :0.00   Min.   :1.000  
+    h10_inc2       h10_inc3_6       h10_inc3       h10_inc4_7   
+ Min.   :    0   Min.   :1.000   Min.   :   20   Min.   :1.000  
+    h10_inc4          h10_inc4_8      h10_inc4_9     
+ Min.   :-27753.0   Min.   :1.000   Min.   :    0.0  
+   h1008_155        h1008_156       h1008_157      
+ Min.   :     0   Min.   :    0   Min.   :    0.0  
+   h1008_158         h1008_160          h1008_159    
+ Min.   :    0.0   Min.   :     0.0   Min.   :  0    
+   h1008_3aq3      h1008_161          h1008_162      
+ Min.   :  0.0   Min.   :     0.0   Min.   :   0.00  
+   h1008_163       h1008_164         h1008_166    
+ Min.   :    0   Min.   :-4806.0   Min.   :  155  
+   h1008_165        h1008_3aq4       h1008_167    
+ Min.   :  0.00   Min.   :  0.00   Min.   :  204  
+   h1008_168       h1008_169       h1008_170       h10_inc7_3   
+ Min.   :0       Min.   :    0   Min.   : 204    Min.   :1.000  
+    h10_inc7         h1008_aq9         h1008_aq10     
+ Min.   :   0.00   Min.   :   0.00   Min.   :    0.0  
+   h1008_aq11         h1008_aq12        h1008_aq13     
+ Min.   :   0.000   Min.   :   0.00   Min.   :   0.00  
+   h1008_aq14        h1008_aq15         h1008_6aq1       
+ Min.   :   0.00   Min.   :   0.000   Min.   :   0.0000  
+   h1008_aq16        h1008_aq17      h1008_10aq1    
+ Min.   :  0.000   Min.   :  0.00   Min.   :  0.00  
+   h1008_aq19         h1008_aq20         h1008_aq21     
+ Min.   :  0.0000   Min.   :  0.0000   Min.   :  0.000  
+   h1008_5aq3       h1008_7aq1       h1008_aq22     
+ Min.   :  0.00   Min.   :  0.00   Min.   :   0.00  
+   h1008_7aq2        h1008_aq23        h1008_aq24      
+ Min.   :   0.00   Min.   :   0.00   Min.   :   0.000  
+  h1008_4aq116       h1008_4aq117        h1008_5aq1    
+ Min.   :  0.0000   Min.   :   0.000   Min.   :  0.00  
+   h1008_7aq4        h1008_7aq5       h1008_7aq6     
+ Min.   :  0.000   Min.   :  0.00   Min.   :  0.000  
+   h1008_7aq7       h1008_7aq8        h1008_7aq9     
+ Min.   : 0.000   Min.   :  0.000   Min.   :  0.000  
+   h1008_aq25       h1008_7aq10       h1008_aq26       
+ Min.   :  0.000   Min.   :  0.00   Min.   :     0.00  
+   h1008_aq27         h1008_aq28         h1008_aq29     
+ Min.   :    0.00   Min.   :   0.000   Min.   :   0.00  
+   h1008_3aq5        h1008_4aq118         h1008_aq30      
+ Min.   :    0.00   Min.   :     0.00   Min.   :   0.000  
+   h1008_6aq3        h1008_3aq6        h1008_3aq7    
+ Min.   :-600.00   Min.   :   0.00   Min.   :   0.0  
+  nh1008_3aq1        h1008_aq32        h1008_aq33      
+ Min.   :   0.00   Min.   :   0.00   Min.   :   0.000  
+   h1008_aq34        h1008_3aq8        h1008_195      
+ Min.   :   0.00   Min.   : 0.0000   Min.   :   0.00  
+  h1008_7aq11        h1009_aq1         h1009_aq2      
+ Min.   :  0.000   Min.   :      0   Min.   :      0  
+   h1009_aq3         h1009_aq4       h1009_aq5      
+ Min.   :   0.00   Min.   :    0   Min.   :   0.00  
+   h1009_aq6         h1009_aq7         h1009_aq8      
+ Min.   :      0   Min.   :   0.00   Min.   :      0  
+   h1010_aq1         h1010_aq2        h1010_aq3      
+ Min.   :      0   Min.   :     0   Min.   :      0  
+   h1010_aq4         h1010_aq5         h1010_aq6      
+ Min.   :    0.0   Min.   :      0   Min.   :      0  
+   h1010_aq7       h1010_aq8          h1010_aq9       
+ Min.   :    0   Min.   :     0.0   Min.   :   0.000  
+   h1010_aq10        h1010_aq11         h1010_aq12      
+ Min.   :    0.0   Min.   :   0.000   Min.   :   0.000  
+   h1010_aq13     h1010_aq14        h1010_aq15     
+ Min.   :   0   Min.   :   0.00   Min.   :   0.00  
+   h1010_aq16         h1010_aq17          h1010_aq18       
+ Min.   :    0.00   Min.   :    0.000   Min.   :  0.00000  
+   h1010_aq19          h1010_aq20          h1010_26     
+ Min.   :   0.0000   Min.   :    0.00   Min.   :0.0000  
+    h1010_27         h1010_aq23         h1010_aq24     
+ Min.   :    0.0   Min.   :   0.000   Min.   :    0.0  
+   h1010_aq25        h1010_aq26           h1011_2     
+ Min.   :   0.00   Min.   :    0.000   Min.   :1.000  
+    h1011_3         h1011_4         h1011_5         h1011_6     
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    h1011_7         h1011_8        h1011_3aq1      h1011_3aq2   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   h1011_3aq3      h1011_3aq4      h1011_3aq5      h1011_3aq6   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   h1011_3aq7       h1012_1         nh1012_1        h1012_2     
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    h1012_3         h1012_4         h1012_5         h1012_6     
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   : 1.00  
+    h1012_7         nh1012_7        nh1012_8        h1012_9      
+ Min.   :1.000   Min.   :1.000   Min.   :2014    Min.   : 1.000  
+    h1012_10        h1012_11        h1012_12        h1012_13    
+ Min.   : 2.00   Min.   :88      Min.   :88      Min.   :88     
+    h1012_14        h1012_15       h1012_3aq1       h1012_16    
+ Min.   :88      Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    h1012_17        h1012_18         h1012_19      h1012_1_4aq1 
+ Min.   :1.000   Min.   : 1.000   Min.   :1.000   Min.   :1.00  
+  h1012_1_5aq1    h1012_1_5aq2    h1012_1_5aq3    h1012_1_5aq4  
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+  h1012_1_5aq5    h1012_1_4aq2    h1012_1_4aq3      h1013_2     
+ Min.   :3.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    h1013_6         h1013_10        h1013_14        h1013_18    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    h1013_22        h1013_26       h1013_8aq1      h1013_5aq1   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   h1013_8aq2      h1013_4aq1     h1013_4aq2      h1013_4aq4   
+ Min.   :1.000   Min.   :1.00   Min.   :1.00    Min.   :1.000  
+   h1013_4aq6      h1013_4aq8     h1013_4aq10      h1013_5aq4   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   h1013_5aq6      h1013_5aq8      h1013_6aq1     h1013_4aq14   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+ h1013_4aq15         h1013_4aq16    h1013_4aq17   
+ Length:16664       Min.   :1.00   Min.   :  0.0  
+  h1013_4aq18     h1013_4aq20     h1013_4aq22     h1013_4aq24   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+  h1013_4aq26     h1013_4aq28     h1013_4aq30     h1013_4aq32   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    h1014_4         h1014_8         h1014_12        h1014_16   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.00  
+    h1014_20        h1014_24        h1014_28       h1014_32   
+ Min.   :1.000   Min.   :1.000   Min.   :1.00   Min.   :1.00  
+    h1014_36       h1014_3aq1      h1014_4aq1       h1015_4    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.00  
+    h1015_8         h1015_12        h1015_20        h1015_25    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    h1015_29       h1015_33        h1015_37       h1015_4aq1   
+ Min.   :1.00   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   h1015_7aq1      h1015_aq1        h1015_40        h1015_41    
+ Min.   :1.000   Min.   :1.000   Min.   :2.000   Min.   :1.000  
+    h1015_42        h1015_43        h1015_44        h1015_45    
+ Min.   :1.000   Min.   :3.000   Min.   :1.000   Min.   :2      
+    h1015_46        h1015_47        h1015_48        h1015_49    
+ Min.   :6.000   Min.   :1.000   Min.   :2       Min.   : NA    
+    h1015_50        h1015_51        h1015_52        h1015_53    
+ Min.   : NA     Min.   : NA     Min.   : NA     Min.   : NA    
+    h1015_54        h1015_55        h1015_56        h1015_57    
+ Min.   : NA     Min.   : NA     Min.   : NA     Min.   : NA    
+    h1015_60       h1015_aq2        h1015_61         h1015_62    
+ Min.   :2.000   Min.   :1.000   Min.   : 1.000   Min.   : 1.00  
+    h1015_63        h1015_66        h1015_67      
+ Min.   : 7.00   Min.   :  0.0   Min.   :  0.000  
+    h1015_68       h1015_aq3        h1015_69         h1015_70    
+ Min.   :3.000   Min.   :1.000   Min.   : 1.000   Min.   : 3.00  
+    h1015_71        h1015_74         h1015_75      
+ Min.   : 3      Min.   :  0.00   Min.   :  0.000  
+    h1015_76       h1015_aq4        h1015_77         h1015_78    
+ Min.   :4.000   Min.   :1.000   Min.   : 1.000   Min.   : 8.00  
+    h1015_79        h1015_82         h1015_83      
+ Min.   : 3.00   Min.   : 0.000   Min.   :  0.000  
+    h1015_84       h1015_aq5        h1015_85         h1015_86    
+ Min.   :5.000   Min.   :1.000   Min.   : 1.000   Min.   :10.00  
+    h1015_87        h1015_90         h1015_91     
+ Min.   : NA     Min.   : 0.000   Min.   : 0.000  
+    h1015_92       h1015_aq6        h1015_93        h1015_94    
+ Min.   :7       Min.   :2       Min.   : NA     Min.   : NA    
+    h1015_95        h1015_98        h1015_99       h1015_100    
+ Min.   : NA     Min.   : NA     Min.   : NA     Min.   : NA    
+   h1015_aq7       h1015_101       h1015_102       h1015_103    
+ Min.   : NA     Min.   : NA     Min.   : NA     Min.   : NA    
+   h1015_106       h1015_107       h1016_6aq1      h1016_6aq4   
+ Min.   : NA     Min.   : NA     Min.   :1.000   Min.   :1.000  
+    h1016_8         h1016_24       h1016_4aq1      h1016_4aq4   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    h1016_32        h1016_36        h1016_40       h1016_4aq7   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    h1016_56        h1016_60        h1016_64        h1017_1      
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   : 0.000  
+    h1017_2          h1017_3         h1017_4         h1017_5     
+ Min.   : 0.000   Min.   :0.000   Min.   :0.000   Min.   :0.000  
+    h1017_6        h1017_7         p10_fnum         p10_tq     
+ Min.   :0.00   Min.   :0.000   Min.   :1.000   Min.   :3.000  
+     p10_cp        p1001_1         p1001_2        p1001_aq1    
+ Min.   :1.00   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    p1001_3         p1001_4           p1001_5     
+ Min.   :1.000   Min.   :  0.000   Min.   : 0.0   
+    p1001_6          p1001_10        p1001_11    
+ Min.   :   0.0   Min.   :1.000   Min.   :4      
+    p1001_12          p1001_13        p1001_14    
+ Min.   :    0.0   Min.   : 2.00   Min.   : 238   
+    p1001_7         p1001_8         p1001_9          p1001_15    
+ Min.   :0       Min.   : 1.00   Min.   :  56.0   Min.   :1.000  
+    p1001_16        p1001_17        p1001_18     
+ Min.   :1.000   Min.   :3.000   Min.   : 1.000  
+    p1001_19         p1001_20        p1001_21        p1001_22    
+ Min.   :   8.0   Min.   :1.000   Min.   :1.000   Min.   :2.00   
+    p1001_23          p1001_24        p1001_25     
+ Min.   :  0.000   Min.   : 0.00   Min.   :   0.0  
+    p1001_27        p1001_28         p1001_29    
+ Min.   :1.000   Min.   :  0.00   Min.   : 0.00  
+    p1001_30         p1001_31        p1001_32      
+ Min.   :   0.0   Min.   :1.000   Min.   :   15.0  
+    p1001_33        p1001_34        p1002_1         p1002_2     
+ Min.   :0       Min.   :0       Min.   :1.000   Min.   :1.000  
+    p1002_3          p1002_4        p1002_5          p1002_6     
+ Min.   : 1.000   Min.   :1941   Min.   : 1.000   Min.   : 0.00  
+    p1002_7         p1002_8        p1002_8aq1    
+ Min.   : 0.00   Min.   :  0.0   Min.   :   0.0  
+    p1002_9         p1002_8aq2      p1002_4aq1       p1002_10    
+ Min.   : 1.000   Min.   :0.060   Min.   :1.000   Min.   :1.000  
+    p1002_11         p1002_12        p1002_8aq3    
+ Min.   :0.0000   Min.   : 0.000   Min.   : 1.000  
+   p1002_8aq4       p1002_31       p1002_4aq2      p1002_4aq3   
+ Min.   : 1.00   Min.   : 50.0   Min.   :1.000   Min.   :1.000  
+   p1002_4aq4      p1002_8aq5       p1002_8aq6    
+ Min.   :1.000   Min.   :0.0000   Min.   :0.0000  
+   p1002_8aq7       p1002_8aq8      p1002_8aq9   
+ Min.   :0.0000   Min.   :0e+00   Min.   :0e+00  
+  p1002_8aq10      p1002_8aq11     p1002_8aq12     p1002_8aq13   
+ Min.   :0.0000   Min.   :0e+00   Min.   :0e+00   Min.   :0e+00  
+  p1002_8aq14     p1002_8aq15       p1002_aq2     
+ Min.   :0e+00   Min.   :0.0000   Min.   :0.0000  
+   p1002_aq3       p1002_aq4       p1002_aq5        p1003_1     
+ Min.   :0.00    Min.   : 1.00   Min.   :14.00   Min.   :1.000  
+    p1003_2         p1003_5         p1003_6         p1003_7     
+ Min.   :0.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    p1003_8         p1003_9         p1003_10        p1003_11    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    p1003_12        p1004_1         p1004_2         p1004_3    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.00  
+    p1004_4        p1004_5           p1004_6       
+ Min.   :1.00   Min.   :   0.00   Min.   :  0.000  
+    p1004_7         p1004_8         p1004_9      
+ Min.   :1.000   Min.   :0.000   Min.   : 0.000  
+    p1004_10         p1004_11        p1004_12     
+ Min.   : 0.000   Min.   :0.000   Min.   : 0.000  
+    p1004_13        p1004_3aq1      p1004_3aq2      p1004_3aq3   
+ Min.   : 0.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   p1004_3aq4      p1004_3aq5      p1004_3aq6      p1004_3aq7   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   p1004_3aq8      p1005_3aq1      p1005_3aq2      p1005_3aq3   
+ Min.   :1.000   Min.   :1.000   Min.   :10.00   Min.   : 0.00  
+   p1005_3aq4       p1005_3aq5      p1005_3aq6      p1005_3aq7   
+ Min.   : 0.000   Min.   :1.000   Min.   : 1.00   Min.   :1.000  
+   p1005_3aq8      p1005_3aq9    p1005_3aq10        p1005_2     
+ Min.   :1.000   Min.   :1.00   Min.   : 1.000   Min.   :1.000  
+    p1005_3        p1005_4aq1      p1005_4aq2      p1005_4aq3   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   p1005_4aq4      p1005_4aq5      p1005_4aq6      p1005_4aq7   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   p1005_4aq8       p1005_5         p1005_6         p1005_7     
+ Min.   :1.000   Min.   :1.00    Min.   :1.000   Min.   :1.000  
+    p1005_8       p1005_3aq11       p1005_9         p1005_10    
+ Min.   :1.00    Min.   :0.000   Min.   :1.000   Min.   :1.000  
+    p1005_11        p1005_12       p1005_13        p1005_14    
+ Min.   :1.000   Min.   :1.00   Min.   :1.000   Min.   :1.000  
+    p1005_15        p1005_16       p1005_17        p1005_18    
+ Min.   :1.000   Min.   :1.0    Min.   :1.000   Min.   :1.000  
+    p1005_19        p1005_20       p1005_21        p1005_22    
+ Min.   :1.000   Min.   :1.00   Min.   :1.000   Min.   :1.000  
+    p1005_23        p1005_24        p1005_25        p1005_26    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    p1005_27        p1005_28        p1005_29       p1005_4aq9    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :0.0000  
+  p1005_4aq10      p1005_4aq11       p1005_aq1    
+ Min.   :0.0000   Min.   :0.0000   Min.   :0.000  
+   p1005_aq2       p1005_aq3       p1005_aq4       p1005_6aq1   
+ Min.   :0.000   Min.   :0.000   Min.   :0.000   Min.   :1.000  
+   p1005_6aq2      p1005_6aq3      p1005_6aq4      p1005_6aq5   
+ Min.   :11.00   Min.   :11.0    Min.   :1.000   Min.   :11.00  
+   p1005_6aq6      p1005_6aq7      p1005_6aq8      p1005_6aq9   
+ Min.   :11.00   Min.   :1.000   Min.   :14.00   Min.   :18.00  
+   p1005_7aq1      p1005_7aq2     p1005_7aq3      p1007_3aq1   
+ Min.   :1.000   Min.   :1.00   Min.   :1.000   Min.   :1.000  
+   p1007_3aq2       p1007_3aq3      p1007_3aq4   
+ Min.   : 1.000   Min.   :11.00   Min.   :11000  
+   p1007_3aq5       p1007_3aq6      p1007_3aq7       np1006_1    
+ Min.   : 1.000   Min.   :11.00   Min.   :11010   Min.   :1.000  
+    np1006_2        np1006_3        np1006_4        np1006_5    
+ Min.   :1.000   Min.   :1.000   Min.   :1954    Min.   :1965   
+    np1006_6        np1006_7        np1006_8        np1006_9    
+ Min.   :1.000   Min.   :1956    Min.   :1975    Min.   :1.000  
+   np1006_10        np1006_11       np1006_12    
+ Min.   :  88.0   Min.   :  88    Min.   : 1.0   
+   np1006_13        np1006_14        np1006_15    
+ Min.   :  88.0   Min.   :  88.0   Min.   : 1.00  
+   np1006_16        np1006_17        np1006_18    
+ Min.   :  88.0   Min.   :  88.0   Min.   : 1.00  
+   np1006_19        np1006_20        np1006_21    
+ Min.   :  88.0   Min.   :  88.0   Min.   : 1.00  
+   np1006_22        np1006_23        np1006_24    
+ Min.   :  88.0   Min.   :  88.0   Min.   : 1.00  
+   np1006_25       np1006_26       np1006_27        np1006_28    
+ Min.   :0.000   Min.   :0.000   Min.   :0.0000   Min.   : 1.00  
+   np1006_29       np1006_30       np1006_31       np1006_32    
+ Min.   : 3.00   Min.   :10.0    Min.   :1.000   Min.   : 2.00  
+   np1006_33       np1006_34        np1006_35       np1006_36    
+ Min.   :1.000   Min.   : 0.000   Min.   :1.000   Min.   : 7.00  
+   np1006_37       np1006_38        np1006_39       np1006_40    
+ Min.   :1.000   Min.   : 1.000   Min.   :1.000   Min.   :1.00   
+   np1006_41        np1006_42        np1006_43    
+ Min.   : 2.000   Min.   : 1.000   Min.   :1.000  
+   np1006_44       p1006_3aq1       c10_fnum         c10_cp     
+ Min.   :1.00    Min.   :1.000   Min.   :2.000   Min.   :1.000  
+   c10_grade        c1001_1         c1001_2         c1001_3     
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1001_4         c1001_5         c1001_6         c1001_7     
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1001_8         c1001_9         c1001_10        c1001_11    
+ Min.   :1.000   Min.   :1.000   Min.   :1.00    Min.   :1.000  
+    c1001_12        c1001_13       c1001_7aq5      c1001_7aq6   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   c1001_7aq7      c1001_7aq8      c1001_4aq1      c1001_4aq2   
+ Min.   :1.000   Min.   :1.000   Min.   :1.00    Min.   :1.000  
+   c1001_4aq3      c1001_4aq4      c1001_4aq5      c1001_4aq6   
+ Min.   :1.00    Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_1         c1002_2         c1002_3         c1002_4     
+ Min.   :1.000   Min.   :1.000   Min.   :1.00    Min.   :1.000  
+    c1002_5         c1002_6         c1002_7         c1002_8     
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_9         c1002_10        c1002_11        c1002_12    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_13        c1002_14        c1002_15        c1002_16    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_17        c1002_18        c1002_19        c1002_20    
+ Min.   :1.000   Min.   :1.000   Min.   :1.00    Min.   :1.000  
+    c1002_21        c1002_22        c1002_23        c1002_24    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_25        c1002_26       c1002_4aq1       c1002_27    
+ Min.   :1.00    Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_28        c1002_29        c1002_30        c1002_31    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_32        c1002_33        c1002_34        c1002_35    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_36        c1002_37        c1002_38        c1002_39    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_40        c1002_41        c1002_42        c1002_43    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_44        c1002_45        c1002_46        c1002_47    
+ Min.   :1.000   Min.   :1.0     Min.   :1.00    Min.   :1.000  
+    c1002_48        c1002_49        c1002_50        c1002_51    
+ Min.   :1.000   Min.   :1.00    Min.   :1.000   Min.   :1.000  
+    c1002_52        c1002_53        c1002_54        c1002_55    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_56        c1002_57        c1002_58       c1002_4aq2   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_59        c1002_60        c1002_61        c1002_62    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_63        c1002_64        c1002_65        c1002_66    
+ Min.   :1.00    Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_67        c1002_68        c1002_69        c1002_70    
+ Min.   :1.00    Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_71        c1002_72        c1002_73        c1002_74    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_75        c1002_76        c1002_77       c1002_7aq1    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :0.0000  
+   c1002_7aq2      c1002_7aq3       c1002_7aq4    
+ Min.   :0.000   Min.   :0.0000   Min.   :0.0000  
+   c1002_7aq5       c1002_7aq6       c1002_7aq7   
+ Min.   :0.0000   Min.   :0.0000   Min.   :1.000  
+   c1002_7aq8      c1002_7aq9     c1002_7aq10     c1002_7aq11   
+ Min.   :1.00    Min.   :1.000   Min.   :1.000   Min.   :1.000  
+  c1002_7aq12     c1002_7aq13     c1002_7aq14       c1002_78     
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :0.0000  
+    c1002_79        c1002_80          c1002_81    
+ Min.   :0       Min.   : 0.0000   Min.   :0      
+    c1002_82         c1002_83        c1002_84        c1002_85    
+ Min.   :0.0000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_86        c1002_87        c1002_88        c1002_89    
+ Min.   :1.000   Min.   :1.00    Min.   :1.000   Min.   :1      
+    c1002_90        c1002_91        c1002_92        c1002_93    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1002_94        c1002_95        c1002_96        c1002_97    
+ Min.   :1.000   Min.   :1.00    Min.   :1.000   Min.   :1.000  
+    c1002_98       c1002_4aq3       c1002_4aq4    
+ Min.   :1.000   Min.   : 1.000   Min.   : 1.000  
+   c1002_4aq5       c1002_4aq6       c1002_4aq7   
+ Min.   : 1.000   Min.   : 1.000   Min.   :1.000  
+   c1002_4aq8     c1002_7aq15      c1003_4aq1      c1003_4aq2   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   c1003_4aq3      c1003_4aq4      c1003_4aq5      c1003_4aq6   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   c1003_4aq7      c1003_4aq8      c1003_4aq9       c1003_6     
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.00   
+    c1003_7         c1003_8         c1003_9         c1003_13    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1003_14        c1003_15       c1004_4aq1      c1004_4aq2   
+ Min.   :1.000   Min.   :1.000   Min.   : 1.00   Min.   :1.000  
+   c1004_4aq3      c1004_4aq4      c1004_4aq5      c1004_4aq6   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.00   
+    c1004_1         c1004_2         c1004_3         c1004_4     
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1004_5         c1004_6         c1004_7         c1004_8     
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+    c1004_9         c1004_10       c1004_4aq7    
+ Min.   :1.00    Min.   :1.000   Min.   :0.0000  
+   c1004_4aq8        c1005_12        c1005_13        c1005_14    
+ Min.   :0.0000   Min.   :1.00    Min.   :1.000   Min.   :1.000  
+    c1005_15        c1005_16        c1005_17       c1005_4aq1   
+ Min.   :1.000   Min.   :120.0   Min.   :22.00   Min.   :1.000  
+   c1005_18           c1005_19           c1005_7aq1   
+ Length:16664       Length:16664       Min.   :1.000  
+   c1005_7aq2      c1005_7aq3      c1005_7aq4      c1005_7aq5   
+ Min.   :1.00    Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   c1005_7aq6      c1005_7aq7      c1005_7aq8      c1005_7aq9   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.00   
+  c1005_7aq10     c1005_7aq11     c1005_7aq12     c1005_7aq13   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+  c1005_7aq14     c1005_7aq15     c1005_7aq16     c1005_7aq17   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+  c1005_7aq18     c1005_7aq19     c1005_7aq20       c1005_20    
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :2      
+    c1005_21        c1005_22        c1005_23        c1005_24    
+ Min.   : NA     Min.   : NA     Min.   : NA     Min.   : NA    
+    c1005_25        c1005_26        c1005_27        c1005_28    
+ Min.   : NA     Min.   : NA     Min.   : NA     Min.   : NA    
+    c1005_29        c1005_30        c1005_31        c1005_32    
+ Min.   : NA     Min.   : NA     Min.   : NA     Min.   : NA    
+    c1005_36       c1005_4aq2        c1005_38       c1005_4aq3   
+ Min.   :1.000   Min.   : 1.000   Min.   :1.000   Min.   : 1.0   
+    c1005_40      c1005_10aq1        c1005_42       c1005_4aq4   
+ Min.   :1.000   Min.   : 1.000   Min.   :1.000   Min.   : 1.0   
+    c1005_44       c1005_4aq5        c1005_46    
+ Min.   :1.000   Min.   : 1.000   Min.   :1.000  
+   c1005_4aq6        c1005_48       c1005_4aq7    
+ Min.   : 1.000   Min.   :1.000   Min.   : 1.000  
+   c1005_4aq8      c1005_4aq9      c1005_4aq10     c1005_4aq11   
+ Min.   :1.000   Min.   : 1.000   Min.   :1.00    Min.   : 1.00  
+  c1005_4aq12     c1005_4aq13     c1005_4aq14     c1005_4aq15   
+ Min.   :1.000   Min.   : 1.0    Min.   :1.000   Min.   :1.000  
+   c1007_4aq1       c1007_4aq2       c1007_7aq1    
+ Min.   :   1.0   Min.   :   1.0   Min.   : 1.000  
+   c1007_7aq2       c1007_7aq3      c1007_4aq3      c1007_4aq4   
+ Min.   : 1.000   Min.   :0.000   Min.   :1.000   Min.   :1.000  
+   c1007_4aq5      c1007_4aq6      c1007_4aq7      c1007_4aq8   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+   c1007_4aq9     c1007_4aq10     c1007_4aq11     c1007_4aq12   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+  c1007_4aq13     c1007_4aq14     c1007_4aq15     c1007_4aq16   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+  c1007_4aq17     c1007_4aq18     c1007_4aq19     c1007_4aq20   
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :1.000  
+  c1007_4aq21     c1007_4aq22     c1007_4aq23    h10_pers_income1
+ Min.   :1.000   Min.   :1.000   Min.   :1.000   Min.   :    0   
+ h10_pers_income2 h10_pers_income3   h10_pers_income4 
+ Min.   :   20    Min.   :-27753.0   Min.   :   0.00  
+ h10_pers_income5 
+ Min.   :-4806.0  
+ [ reached 'max' / getOption("max.print") -- omitted 6 rows ]
+[1] "numeric"
+
+   1    2 
+7578 9086 
+
+   1    2 
+7578 9086 
+
+FALSE 
+16664 
+
+female   male 
+  9086   7578 
+[1] "numeric"
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+    0.0   122.0   192.5   241.6   316.6  2400.0   12030 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+    0.0   122.0   192.5   241.6   316.6  2400.0   12030 
+
+FALSE  TRUE 
+ 4620 12044 
+# A tibble: 2 × 2
+  sex    mean_income
+  <chr>        <dbl>
+1 female        163.
+2 male          312.
+[1] "numeric"
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   1907    1946    1966    1968    1988    2014 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   1907    1946    1966    1968    1988    2014 
+
+FALSE 
+16664 
+
+FALSE 
+16664 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   2.00   28.00   50.00   48.43   70.00  109.00 
+# A tibble: 6 × 2
+    age mean_income
+  <dbl>       <dbl>
+1    20        121.
+2    21        106.
+3    22        130.
+4    23        142.
+5    24        134.
+6    25        145.
+
+middle    old  young 
+  6049   6281   4334 
+# A tibble: 3 × 2
+  ageg   mean_income
+  <chr>        <dbl>
+1 middle        282.
+2 old           125.
+3 young         164.

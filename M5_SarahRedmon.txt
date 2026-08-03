@@ -1,0 +1,369 @@
+#(1): Create an output log file.
+lecture_log <- file("M5_SarahRedmon.txt")
+#(2): Write console output to the log file
+sink(lecture_log, append = TRUE, type = "output")
+#(3): Write the currently opened R script to the log file
+cat(readChar(
+  rstudioapi::getSourceEditorContext()$path,
+  file.info(rstudioapi::getSourceEditorContext()$path)$size
+))
+
+
+
+#
+#
+#(4): LECTURE CODE
+
+#
+# PART 9
+#
+# Prepare for data for data analysis
+install.packages("foreign")
+library(foreign)
+library(dplyr)
+library(ggplot2)
+library(readxl)
+raw_welfare <- read.spss(file = "Koweps_hpc10_2015_beta1.sav",
+                         to.data.frame = T)
+welfare <- raw_welfare
+
+# PREPROCESSING
+#   From last week: Rename variables
+welfare <- rename(welfare,
+                  sex = h10_g3,
+                  birth = h10_g4,
+                  marriage = h10_g10,
+                  religion = h10_g11,
+                  income = p1002_8aq1,
+                  code_job = h10_eco9,
+                  code_region = h10_reg7)
+#   From last week: Create a derived variable "age"
+welfare$age <- 2015 - welfare$birth + 1
+#   From last week: Create a derived variable "age range"
+welfare <- welfare %>%
+  mutate(ageg = ifelse(age < 30, "young",
+                       ifelse(age <= 59, "middle", "old")))
+
+# Question 4: Will religious people get divorced less?
+#
+# Check variables (religion) in welfare
+class(welfare$religion)
+table(welfare$religion)
+
+# Preprocessing - label if a religion exists or not
+welfare$religion <- ifelse(welfare$religion == 1, "yes", "no")
+table(welfare$religion)
+qplot(welfare$religion)
+
+# Explore a variable to check marriage status
+class(welfare$marriage)
+table(welfare$marriage)
+
+# Preprocessing - create a derived variable "group marriage"
+# to add a "divorce" case
+welfare$group_marriage <- ifelse(welfare$marriage == 1, "marriage",
+                                 ifelse(welfare$marriage == 3, "divorce", NA))
+table(welfare$group_marriage)
+table(is.na(welfare$group_marriage))
+
+# Preprocessing - check divorce and marriage by quick plot
+qplot(welfare$group_marriage)
+
+# Create a table of divorce rates based on religious status
+religion_marriage <- welfare %>%
+  filter(!is.na(group_marriage)) %>%
+  group_by(religion, group_marriage) %>%
+  summarize(n = n()) %>%
+  mutate(tot_group = sum(n)) %>%
+  mutate(pct = round(n/tot_group*100, 1))
+religion_marriage
+
+# Use count() in dplyr package
+religion_marriage <- welfare %>%
+  filter(!is.na(group_marriage)) %>%
+  count(religion, group_marriage) %>%
+  group_by(religion) %>%
+  mutate(pct = round(n/sum(n)*100, 1))
+
+# Create a divorce rate table
+divorce <- religion_marriage %>%
+  filter(group_marriage == "divorce") %>%
+  select(religion, pct)
+divorce
+
+# Create a graph (i.e., bar chart)
+ggplot(data = divorce, aes(x = religion, y = pct)) + geom_col()
+#   Will religious people get divorced less? ANSWER: Yes
+
+# Analyze divorce rate by age group and religion - Create divorce rate tables
+# by age group
+ageg_marriage <- welfare %>%
+  filter(!is.na(group_marriage)) %>%
+  group_by(ageg, group_marriage) %>%
+  summarize(n = n()) %>%
+  mutate(tot_group = sum(n)) %>%
+  mutate(pct = round(n/tot_group*100, 1))
+ageg_marriage
+
+# Use count() in dplyr package
+ageg_marriage <- welfare %>%
+  filter(!is.na(group_marriage)) %>%
+  count(ageg, group_marriage) %>%
+  group_by(ageg) %>%
+  mutate(pct = round(n/sum(n)*100, 1))
+
+# Create a divorce rate graph by age group
+# - Note that we exclude young people prior to extracting divorce cases
+ageg_divorce <- ageg_marriage %>%
+  filter(ageg != "young" & group_marriage == "divorce") %>%
+  select(ageg, pct)
+ageg_divorce
+
+# Create a graph (i.e., bar chart)
+ggplot(data = ageg_divorce, aes(x = ageg, y = pct)) + geom_col()
+
+# Create a table of divorce rates based on age group and religious presence
+# - i.e., a table of rates by age group, religion status, and marital status
+ageg_religion_marriage <- welfare %>%
+  filter(!is.na(group_marriage) & ageg != "young") %>%
+  group_by(ageg, religion, group_marriage) %>%
+  summarize(n = n()) %>%
+  mutate(tot_group = sum(n)) %>%
+  mutate(pct = round(n/tot_group*100, 1))
+ageg_religion_marriage
+
+# Use count() in dplyr package
+ageg_religion_marriage <- welfare %>%
+  filter(!is.na(group_marriage) & ageg != "young") %>%
+  count(ageg, religion, group_marriage) %>%
+  group_by(ageg, religion) %>%
+  mutate(pct = round(n/sum(n)*100, 1))
+
+# Create a table of a divorce rate table by age group and religion
+df_divorce <- ageg_religion_marriage %>%
+  filter(group_marriage == "divorce") %>%
+  select(ageg, religion, pct)
+df_divorce
+
+# Create a divorce rate graph based on age group and religion
+ggplot(data = df_divorce, aes(x = ageg, y = pct, fill = religion)) +
+  geom_col(position = "dodge")
+
+
+#
+# PART 10
+#
+# Create US state-wide violent crime rate map
+install.packages("ggiraphExtra")
+library(ggiraphExtra)
+
+# Prepare US state-specific crime data
+str(USArrests)
+head(USArrests)
+library(tibble)
+crime <- rownames_to_column(USArrests, var = "state")
+crime$state <- tolower(crime$state)
+str(crime)
+
+# Prepare US state map data
+library(ggplot2)
+library(maps)
+states_map <- map_data("state")
+str(states_map)
+
+# Create a choropleth map
+library(mapproj)
+ggChoropleth(data = crime,
+             aes(fill = Murder,
+                 map_id = state),
+             map = states_map)
+
+# Create an interactive choropleth map
+ggChoropleth(data = crime,
+             aes(fill = Murder,
+                 map_id = state),
+             map = states_map,
+             interactive = T)
+
+# Create Interactive Graphs in Plotly package
+install.packages("plotly")
+library(plotly)
+
+#   Step 1: create a graph with ggplot2
+library(ggplot2)
+p <- ggplot(data = mpg, aes(x = displ, y = hwy, col = drv)) + geom_point()
+
+#   Step 2: create an interactive graph
+ggplotly(p)
+p <- ggplot(data = diamonds, aes(x = cut, fill = clarity)) +
+  geom_bar(position = "dodge")
+show(p)
+ggplotly(p)
+
+# Create Interactive Time Series Graphs in dygraphs Package
+install.packages("dygraphs")
+library(dygraphs)
+
+# Preparing data, ggplot2:economics
+economics <- ggplot2::economics
+head(economics)
+
+# Use xts to change an original data type to data type
+# with the chronological order
+library(xts)
+eco <- xts(economics$unemploy, order.by = economics$date)
+head(eco)
+
+# Draw an interactive time series graph
+dygraph(eco)
+
+# Select date range
+dygraph(eco) %>% dyRangeSelector()
+
+# Express multiple values
+eco_a <- xts(economics$psavert, order.by = economics$date)
+eco_b <- xts(economics$unemploy/1000, order.by = economics$date)
+
+# Merge data and rename variables
+eco2 <- cbind(eco_a, eco_b)
+colnames(eco2) <- c("psavert", "unemploy")
+head(eco2)
+
+# Draw an interactive time series graph
+dygraph(eco2) %>% dyRangeSelector()
+
+
+
+#
+#
+#(5): Close the log file connection
+sink()
+close(lecture_log)
+#
+
+The downloaded binary packages are in
+	/var/folders/nm/hztlw0mn0q1fd1c4rtwrw2ch0000gn/T//Rtmpgh3jwf/downloaded_packages
+[1] "numeric"
+
+   1    2 
+8047 8617 
+
+  no  yes 
+8617 8047 
+[1] "numeric"
+
+   0    1    2    3    4    5    6 
+2861 8431 2117  712   84 2433   26 
+
+ divorce marriage 
+     712     8431 
+
+FALSE  TRUE 
+ 9143  7521 
+# A tibble: 4 × 5
+# Groups:   religion [2]
+  religion group_marriage     n tot_group   pct
+  <chr>    <chr>          <int>     <int> <dbl>
+1 no       divorce          384      4602   8.3
+2 no       marriage        4218      4602  91.7
+3 yes      divorce          328      4541   7.2
+4 yes      marriage        4213      4541  92.8
+# A tibble: 2 × 2
+# Groups:   religion [2]
+  religion   pct
+  <chr>    <dbl>
+1 no         8.3
+2 yes        7.2
+# A tibble: 6 × 5
+# Groups:   ageg [3]
+  ageg   group_marriage     n tot_group   pct
+  <chr>  <chr>          <int>     <int> <dbl>
+1 middle divorce          437      4918   8.9
+2 middle marriage        4481      4918  91.1
+3 old    divorce          273      4165   6.6
+4 old    marriage        3892      4165  93.4
+5 young  divorce            2        60   3.3
+6 young  marriage          58        60  96.7
+# A tibble: 2 × 2
+# Groups:   ageg [2]
+  ageg     pct
+  <chr>  <dbl>
+1 middle   8.9
+2 old      6.6
+# A tibble: 8 × 6
+# Groups:   ageg, religion [4]
+  ageg   religion group_marriage     n tot_group   pct
+  <chr>  <chr>    <chr>          <int>     <int> <dbl>
+1 middle no       divorce          260      2681   9.7
+2 middle no       marriage        2421      2681  90.3
+3 middle yes      divorce          177      2237   7.9
+4 middle yes      marriage        2060      2237  92.1
+5 old    no       divorce          123      1884   6.5
+6 old    no       marriage        1761      1884  93.5
+7 old    yes      divorce          150      2281   6.6
+8 old    yes      marriage        2131      2281  93.4
+# A tibble: 4 × 3
+# Groups:   ageg, religion [4]
+  ageg   religion   pct
+  <chr>  <chr>    <dbl>
+1 middle no         9.7
+2 middle yes        7.9
+3 old    no         6.5
+4 old    yes        6.6
+
+The downloaded binary packages are in
+	/var/folders/nm/hztlw0mn0q1fd1c4rtwrw2ch0000gn/T//Rtmpgh3jwf/downloaded_packages
+'data.frame':	50 obs. of  4 variables:
+ $ Murder  : num  13.2 10 8.1 8.8 9 7.9 3.3 5.9 15.4 17.4 ...
+ $ Assault : int  236 263 294 190 276 204 110 238 335 211 ...
+ $ UrbanPop: int  58 48 80 50 91 78 77 72 80 60 ...
+ $ Rape    : num  21.2 44.5 31 19.5 40.6 38.7 11.1 15.8 31.9 25.8 ...
+           Murder Assault UrbanPop Rape
+Alabama      13.2     236       58 21.2
+Alaska       10.0     263       48 44.5
+Arizona       8.1     294       80 31.0
+Arkansas      8.8     190       50 19.5
+California    9.0     276       91 40.6
+Colorado      7.9     204       78 38.7
+'data.frame':	50 obs. of  5 variables:
+ $ state   : chr  "alabama" "alaska" "arizona" "arkansas" ...
+ $ Murder  : num  13.2 10 8.1 8.8 9 7.9 3.3 5.9 15.4 17.4 ...
+ $ Assault : int  236 263 294 190 276 204 110 238 335 211 ...
+ $ UrbanPop: int  58 48 80 50 91 78 77 72 80 60 ...
+ $ Rape    : num  21.2 44.5 31 19.5 40.6 38.7 11.1 15.8 31.9 25.8 ...
+'data.frame':	15537 obs. of  6 variables:
+ $ long     : num  -87.5 -87.5 -87.5 -87.5 -87.6 ...
+ $ lat      : num  30.4 30.4 30.4 30.3 30.3 ...
+ $ group    : num  1 1 1 1 1 1 1 1 1 1 ...
+ $ order    : int  1 2 3 4 5 6 7 8 9 10 ...
+ $ region   : chr  "alabama" "alabama" "alabama" "alabama" ...
+ $ subregion: chr  NA NA NA NA ...
+
+The downloaded binary packages are in
+	/var/folders/nm/hztlw0mn0q1fd1c4rtwrw2ch0000gn/T//Rtmpgh3jwf/downloaded_packages
+
+The downloaded binary packages are in
+	/var/folders/nm/hztlw0mn0q1fd1c4rtwrw2ch0000gn/T//Rtmpgh3jwf/downloaded_packages
+# A tibble: 6 × 6
+  date         pce    pop psavert uempmed unemploy
+  <date>     <dbl>  <dbl>   <dbl>   <dbl>    <dbl>
+1 1967-07-01  507. 198712    12.6     4.5     2944
+2 1967-08-01  510. 198911    12.6     4.7     2945
+3 1967-09-01  516. 199113    11.9     4.6     2958
+4 1967-10-01  512. 199311    12.9     4.9     3143
+5 1967-11-01  517. 199498    12.8     4.7     3066
+6 1967-12-01  525. 199657    11.8     4.8     3018
+           [,1]
+1967-07-01 2944
+1967-08-01 2945
+1967-09-01 2958
+1967-10-01 3143
+1967-11-01 3066
+1967-12-01 3018
+           psavert unemploy
+1967-07-01    12.6    2.944
+1967-08-01    12.6    2.945
+1967-09-01    11.9    2.958
+1967-10-01    12.9    3.143
+1967-11-01    12.8    3.066
+1967-12-01    11.8    3.018
