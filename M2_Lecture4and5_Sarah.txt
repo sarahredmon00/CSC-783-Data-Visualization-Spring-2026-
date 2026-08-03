@@ -1,0 +1,524 @@
+#(1): Create an output log file.
+lecture_log <- file("M2_Lecture4and5_Sarah.txt")
+#(2): Write console output to the log file
+sink(lecture_log, append = TRUE, type = "output")
+#(3): Write the currently opened R script to the log file
+cat(readChar(
+  rstudioapi::getSourceEditorContext()$path,
+  file.info(rstudioapi::getSourceEditorContext()$path)$size
+))
+
+
+#
+#
+#(4): LECTURE CODE
+
+#
+# Preparing Data
+exam <- read.csv("csv_exam.csv")
+
+#
+# head() - Return the first part of an R object
+head(exam)
+head(exam, 10)
+
+#
+# tail() - Return the last part of an R object
+tail(exam)
+tail(exam, 10)
+
+#
+# View() - Invoke a spreadsheet-style data viewer
+View(exam)
+# CAUTION: The first "V" in View() is an UPPERCASE letter.
+
+#
+# dim() - Retrieve the dimension of an R object
+dim(exam)
+
+#
+# str() - Display the internal structure of a R object
+str(exam)
+
+#
+# summary() - Display a simple statistics of a R object
+summary(exam)
+
+#
+# Package (dplyr): Data Manipulation
+install.packages("dplyr")   # install dplyr
+library(dplyr)              # load dplyr
+
+#
+# Create a data frame with two variables
+df_raw <- data.frame(var1 = c(1, 2, 1),
+                     var2 = c(2, 3, 2))
+df_raw
+
+#
+# Create a copy of data frame
+df_new <- df_raw
+df_new
+
+#
+# Modify a column name
+df_new <- rename(df_new, v2 = var2)
+df_new
+# CAUTION: In rename(), set "new variable name" = "old variable name".
+
+#
+# Comparison before and after modified the second column name using rename()
+df_raw
+df_new
+
+#
+# Create derived variables
+df <- data.frame(var1 = c(4, 3, 8),
+                 var2 = c(2, 6, 1))
+df
+
+#
+# Create derived variable, Sum
+df$var_sum <- df$var1 + df$var2
+df
+
+#
+# Create a derived variable, Mean
+df$var_mean <- (df$var1 + df$var2) / 2
+df
+
+#
+# Create derived variables using conditional statements
+mpg <- as.data.frame(ggplot2::mpg)
+mpg$total <- (mpg$cty + mpg$hwy) / 2
+summary(mpg$total)  # show a basic descriptive statistics
+hist(mpg$total)     # create a histogram
+
+#
+# Create a decision variable from a conditional statement
+# If greater than 20, pass, otherwise, fail:
+mpg$test <- ifelse(mpg$total >= 20, "pass", "fail")
+head(mpg, 20)
+
+#
+# View the number of vehicles that have been passed fuel efficiency
+# by the frequency chart
+table(mpg$test) # Create a contingency table of the counts at the feature
+
+#
+# Plot a frequency bar graph
+library(ggplot2)  # load ggplot2
+qplot(mpg$test)   # draw a quick plot (fuel's pass/fail vs fuel frequency)
+
+#
+# Create a variable using nested conditional statements
+# Assign three ratings (A, B, C) to grade:
+mpg$grade <- ifelse(mpg$total >= 30, "A",
+                    ifelse(mpg$total >= 20, "B", "C"))
+head(mpg, 20)
+# CAUTION: ifelse() is repeated twice. Don't forget two opening brackets
+# and two closing brackets and two commas each.
+
+#
+# Create a frequency chart and bar graph
+table(mpg$grade)
+qplot(mpg$grade)
+
+#
+# Create as many rating as you want
+# Assign four ratings (A, B, C, D) to grade:
+mpg$grade2 <- ifelse(mpg$total >= 30, "A",
+                     ifelse(mpg$total >= 25, "B",
+                            ifelse(mpg$total >= 20, "C", "D")))
+
+#
+# Extract the data that matches the condition
+# Load the package dplyr and import data:
+library(dplyr)
+exam <- read.csv("csv_exam.csv")
+exam
+
+#
+# Extract and print only if class is 1 in exam
+exam %>% filter(class == 1)
+# NOTE: Shortcut key (Command+Shift+M) inputs %>%
+
+#
+# Extract and print only if class is 2 in exam
+exam %>% filter(class == 2)
+
+#
+# Extract and print only if class is NOT 1 in exam
+exam %>% filter(class != 1)
+
+#
+# Extract and print only if math is greater than 50 in exam
+exam %>% filter(math > 50)
+
+#
+# Extract and print only if math is less than 50 in exam
+exam %>% filter(math < 50)
+
+#
+# Extract and print only if english is greater than or equal to 80 in exam
+exam %>% filter(english >= 80)
+
+#
+# Extract rows that meet multiple conditions
+exam %>% filter(class == 1 & math >= 50)
+exam %>% filter(class == 2 & english >= 80)
+
+#
+# Extracting rows that meet one or more of the different conditions
+exam %>% filter(math >= 90 | english >= 90)
+exam %>% filter(english < 90 | science < 50)
+
+#
+# Extracting rows that correspond to a column value
+exam %>% filter(class == 1 | class == 3 | class == 5)
+
+#
+# Operator %in%: identify if an element belongs to a vector
+exam %>% filter(class %in% c(1, 3, 5))
+
+#
+# Create data from extracted rows
+class1 <- exam %>% filter(class == 1)
+class2 <- exam %>% filter(class == 2)
+mean(class1$math)
+mean(class2$math)
+
+
+#
+#
+#(5): Close the log file connection
+sink()
+close(lecture_log)
+#
+  id class math english science
+1  1     1   50      98      50
+2  2     1   60      97      60
+3  3     1   45      86      78
+4  4     1   30      98      58
+5  5     2   25      80      65
+6  6     2   50      89      98
+   id class math english science
+1   1     1   50      98      50
+2   2     1   60      97      60
+3   3     1   45      86      78
+4   4     1   30      98      58
+5   5     2   25      80      65
+6   6     2   50      89      98
+7   7     2   80      90      45
+8   8     2   90      78      25
+9   9     3   20      98      15
+10 10     3   50      98      45
+   id class math english science
+15 15     4   75      56      78
+16 16     4   58      98      65
+17 17     5   65      68      98
+18 18     5   80      78      90
+19 19     5   89      68      87
+20 20     5   78      83      58
+   id class math english science
+11 11     3   65      65      65
+12 12     3   45      85      32
+13 13     4   46      98      65
+14 14     4   48      87      12
+15 15     4   75      56      78
+16 16     4   58      98      65
+17 17     5   65      68      98
+18 18     5   80      78      90
+19 19     5   89      68      87
+20 20     5   78      83      58
+[1] 20  5
+'data.frame':	20 obs. of  5 variables:
+ $ id     : int  1 2 3 4 5 6 7 8 9 10 ...
+ $ class  : int  1 1 1 1 2 2 2 2 3 3 ...
+ $ math   : int  50 60 45 30 25 50 80 90 20 50 ...
+ $ english: int  98 97 86 98 80 89 90 78 98 98 ...
+ $ science: int  50 60 78 58 65 98 45 25 15 45 ...
+       id            class        math          english    
+ Min.   : 1.00   Min.   :1   Min.   :20.00   Min.   :56.0  
+ 1st Qu.: 5.75   1st Qu.:2   1st Qu.:45.75   1st Qu.:78.0  
+ Median :10.50   Median :3   Median :54.00   Median :86.5  
+ Mean   :10.50   Mean   :3   Mean   :57.45   Mean   :84.9  
+ 3rd Qu.:15.25   3rd Qu.:4   3rd Qu.:75.75   3rd Qu.:98.0  
+ Max.   :20.00   Max.   :5   Max.   :90.00   Max.   :98.0  
+    science     
+ Min.   :12.00  
+ 1st Qu.:45.00  
+ Median :62.50  
+ Mean   :59.45  
+ 3rd Qu.:78.00  
+ Max.   :98.00  
+
+The downloaded binary packages are in
+	/var/folders/nm/hztlw0mn0q1fd1c4rtwrw2ch0000gn/T//Rtmp8E2pKM/downloaded_packages
+  var1 var2
+1    1    2
+2    2    3
+3    1    2
+  var1 var2
+1    1    2
+2    2    3
+3    1    2
+  var1 v2
+1    1  2
+2    2  3
+3    1  2
+  var1 var2
+1    1    2
+2    2    3
+3    1    2
+  var1 v2
+1    1  2
+2    2  3
+3    1  2
+  var1 var2
+1    4    2
+2    3    6
+3    8    1
+  var1 var2 var_sum
+1    4    2       6
+2    3    6       9
+3    8    1       9
+  var1 var2 var_sum var_mean
+1    4    2       6      3.0
+2    3    6       9      4.5
+3    8    1       9      4.5
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  10.50   15.50   20.50   20.15   23.50   39.50 
+   manufacturer              model displ year cyl      trans
+1          audi                 a4   1.8 1999   4   auto(l5)
+2          audi                 a4   1.8 1999   4 manual(m5)
+3          audi                 a4   2.0 2008   4 manual(m6)
+4          audi                 a4   2.0 2008   4   auto(av)
+5          audi                 a4   2.8 1999   6   auto(l5)
+6          audi                 a4   2.8 1999   6 manual(m5)
+7          audi                 a4   3.1 2008   6   auto(av)
+8          audi         a4 quattro   1.8 1999   4 manual(m5)
+9          audi         a4 quattro   1.8 1999   4   auto(l5)
+10         audi         a4 quattro   2.0 2008   4 manual(m6)
+11         audi         a4 quattro   2.0 2008   4   auto(s6)
+12         audi         a4 quattro   2.8 1999   6   auto(l5)
+13         audi         a4 quattro   2.8 1999   6 manual(m5)
+14         audi         a4 quattro   3.1 2008   6   auto(s6)
+15         audi         a4 quattro   3.1 2008   6 manual(m6)
+16         audi         a6 quattro   2.8 1999   6   auto(l5)
+17         audi         a6 quattro   3.1 2008   6   auto(s6)
+18         audi         a6 quattro   4.2 2008   8   auto(s6)
+19    chevrolet c1500 suburban 2wd   5.3 2008   8   auto(l4)
+20    chevrolet c1500 suburban 2wd   5.3 2008   8   auto(l4)
+   drv cty hwy fl   class total test
+1    f  18  29  p compact  23.5 pass
+2    f  21  29  p compact  25.0 pass
+3    f  20  31  p compact  25.5 pass
+4    f  21  30  p compact  25.5 pass
+5    f  16  26  p compact  21.0 pass
+6    f  18  26  p compact  22.0 pass
+7    f  18  27  p compact  22.5 pass
+8    4  18  26  p compact  22.0 pass
+9    4  16  25  p compact  20.5 pass
+10   4  20  28  p compact  24.0 pass
+11   4  19  27  p compact  23.0 pass
+12   4  15  25  p compact  20.0 pass
+13   4  17  25  p compact  21.0 pass
+14   4  17  25  p compact  21.0 pass
+15   4  15  25  p compact  20.0 pass
+16   4  15  24  p midsize  19.5 fail
+17   4  17  25  p midsize  21.0 pass
+18   4  16  23  p midsize  19.5 fail
+19   r  14  20  r     suv  17.0 fail
+20   r  11  15  e     suv  13.0 fail
+
+fail pass 
+ 106  128 
+   manufacturer              model displ year cyl      trans
+1          audi                 a4   1.8 1999   4   auto(l5)
+2          audi                 a4   1.8 1999   4 manual(m5)
+3          audi                 a4   2.0 2008   4 manual(m6)
+4          audi                 a4   2.0 2008   4   auto(av)
+5          audi                 a4   2.8 1999   6   auto(l5)
+6          audi                 a4   2.8 1999   6 manual(m5)
+7          audi                 a4   3.1 2008   6   auto(av)
+8          audi         a4 quattro   1.8 1999   4 manual(m5)
+9          audi         a4 quattro   1.8 1999   4   auto(l5)
+10         audi         a4 quattro   2.0 2008   4 manual(m6)
+11         audi         a4 quattro   2.0 2008   4   auto(s6)
+12         audi         a4 quattro   2.8 1999   6   auto(l5)
+13         audi         a4 quattro   2.8 1999   6 manual(m5)
+14         audi         a4 quattro   3.1 2008   6   auto(s6)
+15         audi         a4 quattro   3.1 2008   6 manual(m6)
+16         audi         a6 quattro   2.8 1999   6   auto(l5)
+17         audi         a6 quattro   3.1 2008   6   auto(s6)
+18         audi         a6 quattro   4.2 2008   8   auto(s6)
+19    chevrolet c1500 suburban 2wd   5.3 2008   8   auto(l4)
+20    chevrolet c1500 suburban 2wd   5.3 2008   8   auto(l4)
+   drv cty hwy fl   class total test grade
+1    f  18  29  p compact  23.5 pass     B
+2    f  21  29  p compact  25.0 pass     B
+3    f  20  31  p compact  25.5 pass     B
+4    f  21  30  p compact  25.5 pass     B
+5    f  16  26  p compact  21.0 pass     B
+6    f  18  26  p compact  22.0 pass     B
+7    f  18  27  p compact  22.5 pass     B
+8    4  18  26  p compact  22.0 pass     B
+9    4  16  25  p compact  20.5 pass     B
+10   4  20  28  p compact  24.0 pass     B
+11   4  19  27  p compact  23.0 pass     B
+12   4  15  25  p compact  20.0 pass     B
+13   4  17  25  p compact  21.0 pass     B
+14   4  17  25  p compact  21.0 pass     B
+15   4  15  25  p compact  20.0 pass     B
+16   4  15  24  p midsize  19.5 fail     C
+17   4  17  25  p midsize  21.0 pass     B
+18   4  16  23  p midsize  19.5 fail     C
+19   r  14  20  r     suv  17.0 fail     C
+20   r  11  15  e     suv  13.0 fail     C
+
+  A   B   C 
+ 10 118 106 
+   id class math english science
+1   1     1   50      98      50
+2   2     1   60      97      60
+3   3     1   45      86      78
+4   4     1   30      98      58
+5   5     2   25      80      65
+6   6     2   50      89      98
+7   7     2   80      90      45
+8   8     2   90      78      25
+9   9     3   20      98      15
+10 10     3   50      98      45
+11 11     3   65      65      65
+12 12     3   45      85      32
+13 13     4   46      98      65
+14 14     4   48      87      12
+15 15     4   75      56      78
+16 16     4   58      98      65
+17 17     5   65      68      98
+18 18     5   80      78      90
+19 19     5   89      68      87
+20 20     5   78      83      58
+  id class math english science
+1  1     1   50      98      50
+2  2     1   60      97      60
+3  3     1   45      86      78
+4  4     1   30      98      58
+  id class math english science
+1  5     2   25      80      65
+2  6     2   50      89      98
+3  7     2   80      90      45
+4  8     2   90      78      25
+   id class math english science
+1   5     2   25      80      65
+2   6     2   50      89      98
+3   7     2   80      90      45
+4   8     2   90      78      25
+5   9     3   20      98      15
+6  10     3   50      98      45
+7  11     3   65      65      65
+8  12     3   45      85      32
+9  13     4   46      98      65
+10 14     4   48      87      12
+11 15     4   75      56      78
+12 16     4   58      98      65
+13 17     5   65      68      98
+14 18     5   80      78      90
+15 19     5   89      68      87
+16 20     5   78      83      58
+   id class math english science
+1   2     1   60      97      60
+2   7     2   80      90      45
+3   8     2   90      78      25
+4  11     3   65      65      65
+5  15     4   75      56      78
+6  16     4   58      98      65
+7  17     5   65      68      98
+8  18     5   80      78      90
+9  19     5   89      68      87
+10 20     5   78      83      58
+  id class math english science
+1  3     1   45      86      78
+2  4     1   30      98      58
+3  5     2   25      80      65
+4  9     3   20      98      15
+5 12     3   45      85      32
+6 13     4   46      98      65
+7 14     4   48      87      12
+   id class math english science
+1   1     1   50      98      50
+2   2     1   60      97      60
+3   3     1   45      86      78
+4   4     1   30      98      58
+5   5     2   25      80      65
+6   6     2   50      89      98
+7   7     2   80      90      45
+8   9     3   20      98      15
+9  10     3   50      98      45
+10 12     3   45      85      32
+11 13     4   46      98      65
+12 14     4   48      87      12
+13 16     4   58      98      65
+14 20     5   78      83      58
+  id class math english science
+1  1     1   50      98      50
+2  2     1   60      97      60
+  id class math english science
+1  5     2   25      80      65
+2  6     2   50      89      98
+3  7     2   80      90      45
+  id class math english science
+1  1     1   50      98      50
+2  2     1   60      97      60
+3  4     1   30      98      58
+4  7     2   80      90      45
+5  8     2   90      78      25
+6  9     3   20      98      15
+7 10     3   50      98      45
+8 13     4   46      98      65
+9 16     4   58      98      65
+   id class math english science
+1   3     1   45      86      78
+2   5     2   25      80      65
+3   6     2   50      89      98
+4   7     2   80      90      45
+5   8     2   90      78      25
+6   9     3   20      98      15
+7  10     3   50      98      45
+8  11     3   65      65      65
+9  12     3   45      85      32
+10 14     4   48      87      12
+11 15     4   75      56      78
+12 17     5   65      68      98
+13 18     5   80      78      90
+14 19     5   89      68      87
+15 20     5   78      83      58
+   id class math english science
+1   1     1   50      98      50
+2   2     1   60      97      60
+3   3     1   45      86      78
+4   4     1   30      98      58
+5   9     3   20      98      15
+6  10     3   50      98      45
+7  11     3   65      65      65
+8  12     3   45      85      32
+9  17     5   65      68      98
+10 18     5   80      78      90
+11 19     5   89      68      87
+12 20     5   78      83      58
+   id class math english science
+1   1     1   50      98      50
+2   2     1   60      97      60
+3   3     1   45      86      78
+4   4     1   30      98      58
+5   9     3   20      98      15
+6  10     3   50      98      45
+7  11     3   65      65      65
+8  12     3   45      85      32
+9  17     5   65      68      98
+10 18     5   80      78      90
+11 19     5   89      68      87
+12 20     5   78      83      58
+[1] 46.25
+[1] 61.25
