@@ -1,0 +1,387 @@
+---
+title: "CSC 783 - Term Project Report"
+author: "Sarah Redmon & Wes Smith"
+date: "2026-05-02"
+output:
+  pdf_document: default
+---
+
+# Abstract
+
+This report contains a close examination of how study habits can improve with a healthy balance of study time and stress management. There are introduction, methods, results, discussion, and conclusion sections to help guide this. Three research questions are extracted to help understand the main topic, specifically for the targeted audiences of the dataset examined.
+
+# Introduction
+
+The dataset we have chosen from Kaggle is titled "University Students Performance & Study Habits 2026" (Asifuzzmana, 2026), which is public and accessible through the Kaggle URL listed in the References section, and was downloaded on April 15, 2026. The public domain houses a dataset containing 10,000 students (i.e., 10,000 rows). There are no missing values, and there is also one CSV file. This dataset contains 27 columns, including but not limited to GPA, AI usage, and sleep time. It is a static dataset, a snapshot from 2026, with a new dataset released each year.
+  
+The dataset includes a list of students from many countries and backgrounds. The students are half female and half male and from every major imaginable. The dataset is updated yearly to keep it from becoming stale and is precleaned with null values removed. The overall purpose of the dataset is to show the correlations and relationships between the study habits and academic performance. The dataset can help students know what specifically they can improve on, as well as help educators and researchers know what contributes to student performance, so they can bring forth information that emphasizes what can help make students' habits healthier and bring the best possible outcomes (i.e., high GPA).
+
+With this background information said, the research questions we wanted to answer are:
+
+1. Does increased study time always lead to better performance?
+    - Optimal study time is around 3-5 hours being much more effective if combined with sleep time 7-8 hours and low levels of stress. Study time effectiveness starts to taper off around 6 hours and leads to higher levels of stress.
+2. Can sleep and study time be optimally balanced?
+    - The best balance of sleep to study time is 3-5 hours per day of study time to 7-8 hours of sleep. More study time correlates to higher stress levels, leading to lower performance.
+3. Is stress the most important factor in the dataset?
+    - Stress has the strongest negative correlation with performance, with the other key factors GPA, sleep, and study time having a direct relationship with stress levels.
+
+# Methods
+
+To answer the aforementioned research questions, we applied the following statistical techniques:
+
+- Correlation tests
+- Welch two-sample t-test
+- One-way ANOVA (stress groups and countries)
+- Correlation matrix with p-values
+- Linear regression to compute adjusted GPA residuals
+- Interactive and static visualizations
+
+The dataset includes GPA, study hours, sleep hours, stress levels, gender, and country.
+
+# Results
+
+Before looking at the source code and results, the preprocessing of the code needs to be done initially:
+
+```{r, results='show', message=FALSE, warning=FALSE}
+
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(plotly)
+library(htmlwidgets)
+library(corrplot)
+library(webshot2)
+library(countrycode)
+library(sf)
+library(rnaturalearth)
+library(patchwork)
+
+students <- read_csv("global_university_students_performance_habits_10000.csv")
+
+students <- students %>%
+  mutate(
+    GPA_letter = case_when(
+      GPA >= 3.5 ~ "A",
+      GPA >= 3.0 ~ "B",
+      GPA >= 2.0 ~ "C",
+      GPA >= 1.0 ~ "D",
+      TRUE ~ "F"
+    )
+  )
+
+model <- lm(GPA ~ gender + country, data = students)
+students <- students %>%
+  mutate(GPA_residual = resid(model))
+
+dir.create("output", showWarnings = FALSE)
+
+```
+
+In the next subsection, the source code and the graphs are generated as the results from this study (the discussion about these results follows this section).
+
+## Data Analysis Results
+
+### 1. Correlation Tests
+
+```{r, results='show', message=FALSE, warning=FALSE}
+
+cor_tests <- list(
+  study_vs_gpa = cor.test(students$study_hours_per_day, students$GPA, use = "complete.obs"),
+  sleep_vs_gpa = cor.test(students$sleep_hours, students$GPA, use = "complete.obs"),
+  stress_vs_gpa = cor.test(students$mental_stress_level, students$GPA, use = "complete.obs")
+)
+
+cat("\n===== CORRELATION TESTS =====\n")
+print(cor_tests)
+
+```
+
+### 2. T-Test: GPA Differences by Gender
+
+```{r, results='show', message=FALSE, warning=FALSE}
+
+ttest_gender <- t.test(GPA ~ gender, data = students)
+
+cat("\n===== T-TEST: GPA BY GENDER =====\n")
+print(ttest_gender)
+
+```
+
+### 3. ANOVA: GPA Differences by Stress Level Groups
+
+```{r, results='show', message=FALSE, warning=FALSE}
+
+students$stress_group_factor <- cut(
+  students$mental_stress_level,
+  breaks = 4,
+  labels = c("Low", "Moderate", "High", "Very High")
+)
+
+anova_stress <- aov(GPA ~ stress_group_factor, data = students)
+
+cat("\n===== ANOVA: GPA BY STRESS GROUP =====\n")
+summary(anova_stress)
+
+```
+
+### 4. ANOVA: GPA Differences by Country
+
+```{r, results='show', message=FALSE, warning=FALSE}
+
+country_counts <- students %>% count(country)
+valid_countries <- country_counts %>% filter(n >= 30) %>% pull(country)
+
+anova_country <- aov(GPA ~ country, data = students %>% filter(country %in% valid_countries))
+
+cat("\n===== ANOVA: GPA BY COUNTRY (n >= 30) =====\n")
+summary(anova_country)
+
+```
+
+### 5. Correlation Matrix with P-Values
+
+```{r, results='show', message=FALSE, warning=FALSE}
+
+vars_for_corr <- students %>%
+  select(study_hours_per_day, sleep_hours, mental_stress_level, GPA)
+
+corr_results <- Hmisc::rcorr(as.matrix(vars_for_corr))
+
+cat("\n===== CORRELATION MATRIX =====\n")
+print(corr_results$r)
+
+cat("\n===== P-VALUE MATRIX =====\n")
+print(corr_results$P)
+
+```
+
+## Data Visualizations Results
+
+### 1. Stress Level by GPA Letter (Bar Graph)
+
+```{r, results='show', message=FALSE, warning=FALSE}
+
+bar <- ggplot(students, aes(x = mental_stress_level, fill = GPA_letter)) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(
+    values = c(
+      "A" = "#2A9D8F",
+      "B" = "#E9C46A",
+      "C" = "#F4A261",
+      "D" = "#E76F51",
+      "F" = "#D62828"
+    )
+  ) +
+  labs(
+    title = "Stress Level by GPA Letter",
+    x = "Mental Stress Level",
+    y = "Count",
+    fill = "GPA Letter"
+  )
+bar
+
+```
+
+### 2. GPA by Stress Level (Box Plot)
+
+```{r, results='show', message=FALSE, warning=FALSE}
+
+stress_levels <- seq(
+  from = min(students$mental_stress_level, na.rm = TRUE),
+  to = max(students$mental_stress_level, na.rm = TRUE),
+  length.out = 10
+)
+
+stress_levels <- round(stress_levels, 1)
+
+box_data <- students %>%
+  mutate(stress_group = round(mental_stress_level, 1)) %>%
+  filter(stress_group %in% stress_levels)
+
+box <- ggplot(box_data, aes(x = factor(stress_group), y = GPA)) +
+  geom_boxplot(fill = "#457B9D", alpha = 0.7) +
+  labs(
+    title = "GPA by Stress Level",
+    x = "Stress Level",
+    y = "GPA (0–4.0)"
+  )
+box
+
+```
+
+### 3. Average GPA by Student Nationality (Interactive Choropleth Map)
+
+```{r, results='show', message=FALSE, warning=FALSE}
+
+choropleth_data <- students %>%
+  mutate(iso3 = countrycode(country, origin = "country.name", destination = "iso3c")) %>%
+  filter(!is.na(iso3)) %>%
+  group_by(country, iso3) %>%
+  summarise(
+    avg_GPA = mean(GPA, na.rm = TRUE),
+    student_count = n(),
+    .groups = "drop"
+  )
+
+world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
+
+map_data_joined <- world %>%
+  left_join(choropleth_data, by = c("iso_a3" = "iso3"))
+
+choropleth <- ggplot(map_data_joined) +
+  geom_sf(aes(fill = avg_GPA), color = "white", linewidth = 0.2) +
+  scale_fill_viridis_c(na.value = "grey90") +
+  labs(
+    title = "Average GPA by Student Nationality",
+    fill = "Avg GPA"
+  ) +
+  theme_void()
+
+choropleth_interactive <- ggplotly(choropleth)
+saveWidget(
+  choropleth_interactive,
+  "interactive_study_choropleth.html",
+  selfcontained = TRUE
+)
+choropleth
+
+```
+
+### 4. Correlation Heatmap
+
+```{r, results='show', message=FALSE, warning=FALSE}
+
+heat_vars <- students %>%
+  select(study_hours_per_day, sleep_hours, mental_stress_level, GPA)
+
+cor_matrix <- cor(heat_vars, use = "complete.obs")
+
+corrplot(
+  cor_matrix,
+  method = "color",
+  col = colorRampPalette(c("#457B9D", "white", "#E63946"))(200),
+  tl.cex = 1
+)
+dev.off()
+
+```
+
+### 5. Sleep Hours Density by GPA Letter (Density Chart)
+
+```{r, results='show', message=FALSE, warning=FALSE}
+
+density <- ggplot(students, aes(x = sleep_hours, fill = GPA_letter)) +
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(
+    values = c(
+      "A" = "#264653",
+      "B" = "#2A9D8F",
+      "C" = "#E9C46A",
+      "D" = "#F4A261",
+      "F" = "#E76F51"
+    )
+  ) +
+  labs(
+    title = "Sleep Hours Density by GPA Letter",
+    x = "Sleep Hours",
+    y = "Density",
+    fill = "GPA Letter"
+  )
+density
+
+```
+
+### 6. Study Hours vs Adjusted GPA (Interactive Scatter Plot)
+
+```{r, results='show', message=FALSE, warning=FALSE}
+
+scatter <- ggplot(
+  students,
+  aes(x = study_hours_per_day, y = GPA_residual, color = mental_stress_level)
+) +
+  geom_point(alpha = 0.7) +
+  scale_color_gradient(low = "blue", high = "red") +
+  labs(
+    title = "Study Hours vs Adjusted GPA",
+    x = "Study Hours Per Day",
+    y = "Adjusted GPA",
+    color = "Mental Stress"
+  )
+
+scatter_interactive <- ggplotly(scatter)
+saveWidget(
+  scatter_interactive,
+  "interactive_study_scatter.html",
+  selfcontained = TRUE
+)
+scatter
+
+```
+
+# Discussion
+
+The results show that study hours, sleep, and stress are the strongest predictors of GPA. Gender and nationality do not significantly influence GPA. Stress has a substantial negative effect, while study time has the strongest positive effect.
+
+## Data Analysis Discussion
+
+Specifically, for the second most important test for this study, which is the GPA differences by gender, the null hypothesis is that the true difference between Female and Male is equal to 95% confidence interval. The alternative hypothesis is that the true difference between Female and Male is not equal to 95% confidence interval. The means for both Female and Male equal to roughly 3.6. The interpretation is that there is no significant GPA difference between genders; CI includes zero. Additionally, for the most important test done, which is the GPA differences by stress, the effect is that there are strong differences in GPA across stress groups. The interpretation is that higher stress is associated with lower GPA; stress is a major predictor as a result. 
+
+The full results from these two tests are listed below:
+
+1. T-Test: GPA Differences by Gender:
+- Result:
+    - t(9989.6) = –1.47
+    - p = 0.142
+- Means:
+    - Female = 3.612
+    - Male = 3.623
+- 95% CI: –0.027 to 0.0039
+- Interpretation: No significant GPA difference between genders; CI includes zero.
+
+2. ANOVA: GPA Differences by Stress Level:
+- Result:
+    - F(3, 9996) = 229.2
+    - p < 2e‑16
+- Effect: Strong differences in GPA across stress groups
+- Interpretation: Higher stress is associated with lower GPA; stress is a major predictor.
+
+## Data Visualizations Discussion
+
+### 1. Stress Level by GPA Letter (Bar Graph)
+
+The bar chart shows GPA letter distribution across stress levels. Stress management directly influences grade outcomes. Students with lower stress achieve higher academic performance.
+
+### 2. GPA by Stress Level (Box Plot)
+
+The box plot compares GPA distributions across stress levels. Stress not only lowers average GPA but also increases performance inconsistency.
+
+### 3. Average GPA by Student Nationality (Interactive Choropleth Map)
+
+The choropleth map shows how the average GPA differs by country. Each nation’s color reflects its students’ overall academic performance. Darker shades are higher GPAs, and lighter shades are lower GPAs. Regional clusters appear - some areas consistently outperform others. Academic results vary globally, likely influenced by education systems, culture, and resources.
+
+### 4. Correlation Heatmap
+
+The correlation heatmap displays the strength and direction of linear relationships among four key variables in the dataset:
+
+- Sleep hours
+- Mental stress level
+- GPA
+- Study hours
+
+The heatmap shows a moderate positive correlation, meaning students who study more tend to have higher GPAs. There is a small positive correlation, suggesting that students who sleep more tend to have slightly higher GPAs. This is a negative correlation, meaning higher stress levels are associated with lower GPAs.
+
+### 5. Sleep Hours Density by GPA Letter (Density Chart)
+
+The density plot shows sleep hour distributions for each GPA letter category. A-grade students cluster around 7–8 hours of sleep. Consistent sleep habits are a strong predictor of academic success.
+
+### 6. Study Hours vs Adjusted GPA (Interactive Scatter Plot)
+
+The scatter plot shows the relationship between daily study hours and GPA. Color intensity represents mental stress levels. Moderate study hours with low stress (blue points) yield the most consistent positive outcomes. Study time improves GPA, but excessive stress undermines benefits. Balance between workload and mental health is key.
+
+# Conclusion
+
+Academic performance is most strongly influenced by behavioral factors rather than demographic ones. Interventions that improve study habits, sleep quality, and stress management may significantly improve GPA outcomes. Students who study more generally earn higher GPAs, but pushing study time too far raises stress, which starts to hurt performance. Sleep is a major positive factor; students who sleep more tend to have higher GPAs and lower stress overall. Stress is the strongest negative influence in the dataset, connecting to lower GPA, less sleep, and heavier study loads. Top‑performing students balance study, sleep, and stress, showing steady habits rather than extremes.
+
+# Reference
+
+Asifuzzmana, A. K. M. (2026, April 1). *University Students Performance & Study Habits 2026*. Kaggle. <https://www.kaggle.com/datasets/asifxzaman/university-students-performance-and-study-habits2026>
